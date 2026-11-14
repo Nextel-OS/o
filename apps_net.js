@@ -7,9 +7,9 @@ NX.registerApp({
     id: 'browser',
     name: 'Браузер',
     icon: NX.icons.browser,
-    w: 900, h: 650,
+    w: 950, h: 650,
     render(body, ctx) {
-        // Предустановленные вкладки (безопасные для iframe)
+        // Предустановленные вкладки
         let tabs = [
             { id: 1, title: 'Википедия', url: 'https://ru.m.wikipedia.org/wiki/Заглавная_страница', history: ['https://ru.m.wikipedia.org/wiki/Заглавная_страница'], hIndex: 0 },
             { id: 2, title: 'OpenStreetMap', url: 'https://www.openstreetmap.org/export/embed.html?bbox=37.5,55.7,37.7,55.8&layer=mapnik', history: ['https://www.openstreetmap.org/export/embed.html?bbox=37.5,55.7,37.7,55.8&layer=mapnik'], hIndex: 0 },
@@ -34,8 +34,8 @@ NX.registerApp({
                 <div class="browser-app">
                     <div class="browser-tabs">
                         ${tabsHtml}
-                        <div class="browser-tab" id="add-tab" style="min-width:40px;max-width:40px;justify-content:center;cursor:pointer;">
-                            ${NX.icons.plus || NX.icons.x}
+                        <div class="browser-tab" id="add-tab" style="min-width:40px;max-width:40px;justify-content:center;cursor:pointer;border-bottom:none;padding:8px;">
+                            +
                         </div>
                     </div>
                     <div class="browser-toolbar">
@@ -119,7 +119,6 @@ NX.registerApp({
             if (!url) return;
             const activeTab = tabs.find(t => t.id === activeTabId);
             
-            // Простейшая валидация URL
             let finalUrl = url;
             if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('nextel://')) {
                 if (url.includes('.') && !url.includes(' ')) {
@@ -132,7 +131,6 @@ NX.registerApp({
             activeTab.url = finalUrl;
             activeTab.title = finalUrl.replace(/^https?:\/\//, '').split('/')[0];
             
-            // Обрезаем историю вперед
             activeTab.history = activeTab.history.slice(0, activeTab.hIndex + 1);
             activeTab.history.push(finalUrl);
             activeTab.hIndex = activeTab.history.length - 1;
@@ -228,7 +226,6 @@ NX.registerApp({
                 const min = Math.round(data.daily.temperature_2m_min[i]);
                 const code = data.daily.weather_code[i];
                 
-                // Простейший расчет ширины полосы
                 const leftOffset = 20;
                 const width = 60;
 
@@ -285,7 +282,7 @@ NX.registerApp({
 NX.registerApp({
     id: 'mail',
     name: 'Почта',
-    icon: NX.icons.mail || NX.icons.browser,
+    icon: NX.icons.wart, // Используем как заглушку
     w: 850, h: 600, single: true,
     render(body) {
         // Имитация писем
@@ -342,7 +339,6 @@ NX.registerApp({
                 </div>
             `;
 
-            // Обработчики папок
             NX.$$('.files-nav-item', body).forEach(el => {
                 el.onclick = () => {
                     currentFolder = el.dataset.folder;
@@ -351,12 +347,10 @@ NX.registerApp({
                 };
             });
 
-            // Обработчик кнопки "Написать"
             NX.$('#mail-compose', body).onclick = () => {
                 NX.notifications.push('Почта', 'Редактор писем в разработке', 'info');
             };
 
-            // Обработчик писем
             NX.$$('.mail-item', body).forEach(el => {
                 el.onclick = () => {
                     const id = parseInt(el.dataset.id);
@@ -400,9 +394,8 @@ NX.registerApp({
     icon: NX.icons.market,
     w: 900, h: 650, single: true,
     render(body) {
-        // Каталог всех доступных приложений (включая те, что нужно установить)
+        // Каталог всех доступных приложений
         const catalog = [
-            // Базовые (уже в installed)
             { id: 'browser', name: 'Браузер', cat: 'Программы', size: '12 МБ', rating: 4.8, desc: 'Быстрый браузер с поддержкой вкладок.', color: '#2b8a5f' },
             { id: 'calc', name: 'Калькулятор', cat: 'Утилиты', size: '2 МБ', rating: 4.9, desc: 'Простой и удобный калькулятор.', color: '#5e5ce6' },
             { id: 'weather', name: 'Погода', cat: 'Утилиты', size: '5 МБ', rating: 4.7, desc: 'Прогноз погоды с реальным API.', color: '#34aadc' },
@@ -490,7 +483,6 @@ NX.registerApp({
                 </div>
             `;
 
-            // Обработчики категорий
             NX.$$('.market-tab', body).forEach(tab => {
                 tab.onclick = () => {
                     currentCat = tab.dataset.cat;
@@ -498,13 +490,11 @@ NX.registerApp({
                 };
             });
 
-            // Обработчик поиска
             NX.$('#market-search', body).oninput = (e) => {
                 searchQuery = e.target.value;
                 render();
             };
 
-            // Установка
             NX.$$('[data-install]', body).forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.dataset.install;
@@ -516,14 +506,12 @@ NX.registerApp({
                 };
             });
 
-            // Открытие
             NX.$$('[data-open]', body).forEach(btn => {
                 btn.onclick = () => {
                     NX.openApp(btn.dataset.open);
                 };
             });
 
-            // Удаление
             NX.$$('[data-remove]', body).forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.dataset.remove;
