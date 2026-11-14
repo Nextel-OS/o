@@ -7,6 +7,7 @@ NX.registerApp({
     id: 'browser',
     name: 'Браузер',
     icon: NX.icons.browser,
+    color: '#2b8a5f',
     w: 950, h: 650,
     render(body, ctx) {
         // Предустановленные вкладки
@@ -22,6 +23,7 @@ NX.registerApp({
 
         const render = () => {
             const activeTab = tabs.find(t => t.id === activeTabId);
+            if (!activeTab) return;
             
             let tabsHtml = tabs.map(t => `
                 <div class="browser-tab ${t.id === activeTabId ? 'active' : ''}" data-id="${t.id}">
@@ -118,6 +120,7 @@ NX.registerApp({
         const navigate = (url) => {
             if (!url) return;
             const activeTab = tabs.find(t => t.id === activeTabId);
+            if (!activeTab) return;
             
             let finalUrl = url;
             if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('nextel://')) {
@@ -147,6 +150,7 @@ NX.registerApp({
     id: 'weather',
     name: 'Погода',
     icon: NX.icons.weather,
+    color: '#34aadc',
     w: 600, h: 650, single: true,
     render(body) {
         const cities = {
@@ -168,22 +172,8 @@ NX.registerApp({
             </div>
         `;
 
-        const loadWeather = async () => {
-            const [lat, lon] = cities[currentCity];
-            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
-            
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                renderWeather(data);
-            } catch (e) {
-                NX.$('#weather-container', body).innerHTML = `<div style="padding:20px;text-align:center;">Ошибка загрузки погоды</div>`;
-            }
-        };
-
         const getWeatherIcon = (code) => {
-            if (code === 0) return NX.icons.sun;
-            if (code < 3) return NX.icons.sun;
+            if (code === 0 || code === 1) return NX.icons.sun;
             if (code < 50) return NX.icons.weather;
             if (code < 70) return NX.icons.weather;
             if (code < 80) return NX.icons.weather;
@@ -201,9 +191,36 @@ NX.registerApp({
             return 'Гроза';
         };
 
+        const loadWeather = async () => {
+            const [lat, lon] = cities[currentCity];
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=5`;
+            
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Ошибка сети');
+                const data = await res.json();
+                renderWeather(data);
+            } catch (e) {
+                const container = NX.$('#weather-container', body);
+                if (container) {
+                    container.innerHTML = `
+                        <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100%;padding:40px;text-align:center;">
+                            <div style="font-size:48px;margin-bottom:20px;">⚠️</div>
+                            <div style="font-size:18px;margin-bottom:8px;">Не удалось загрузить погоду</div>
+                            <div style="font-size:13px;opacity:0.7;margin-bottom:20px;">Проверьте подключение к интернету</div>
+                            <button class="btn" id="weather-retry" style="background:rgba(255,255,255,0.2);color:#fff;">Повторить</button>
+                        </div>
+                    `;
+                    const retry = NX.$('#weather-retry', container);
+                    if (retry) retry.onclick = () => loadWeather();
+                }
+            }
+        };
+
         const renderWeather = (data) => {
             const cur = data.current;
             const container = NX.$('#weather-container', body);
+            if (!container) return;
             
             let hoursHtml = '';
             for (let i = 0; i < 8; i++) {
@@ -268,10 +285,13 @@ NX.registerApp({
                 </div>
             `;
 
-            NX.$('#weather-city-select', container).onchange = (e) => {
-                currentCity = e.target.value;
-                loadWeather();
-            };
+            const select = NX.$('#weather-city-select', container);
+            if (select) {
+                select.onchange = (e) => {
+                    currentCity = e.target.value;
+                    loadWeather();
+                };
+            }
         };
 
         loadWeather();
@@ -282,7 +302,8 @@ NX.registerApp({
 NX.registerApp({
     id: 'mail',
     name: 'Почта',
-    icon: NX.icons.wart, // Используем как заглушку
+    icon: NX.icons.wart,
+    color: '#0a84ff',
     w: 850, h: 600, single: true,
     render(body) {
         // Имитация писем
@@ -295,7 +316,6 @@ NX.registerApp({
         ];
 
         let currentFolder = 'inbox';
-        let currentEmail = null;
 
         const render = () => {
             let listHtml = '';
@@ -342,7 +362,6 @@ NX.registerApp({
             NX.$$('.files-nav-item', body).forEach(el => {
                 el.onclick = () => {
                     currentFolder = el.dataset.folder;
-                    currentEmail = null;
                     render();
                 };
             });
@@ -357,7 +376,6 @@ NX.registerApp({
                     const email = inbox.find(m => m.id === id);
                     if (email) {
                         email.read = true;
-                        currentEmail = email;
                         
                         const list = NX.$('#mail-list', body);
                         const reader = NX.$('#mail-reader', body);
@@ -392,38 +410,81 @@ NX.registerApp({
     id: 'market',
     name: 'NMarket',
     icon: NX.icons.market,
+    color: '#0a84ff',
     w: 900, h: 650, single: true,
     render(body) {
-        // Каталог всех доступных приложений
-        const catalog = [
-            { id: 'browser', name: 'Браузер', cat: 'Программы', size: '12 МБ', rating: 4.8, desc: 'Быстрый браузер с поддержкой вкладок.', color: '#2b8a5f' },
-            { id: 'calc', name: 'Калькулятор', cat: 'Утилиты', size: '2 МБ', rating: 4.9, desc: 'Простой и удобный калькулятор.', color: '#5e5ce6' },
-            { id: 'weather', name: 'Погода', cat: 'Утилиты', size: '5 МБ', rating: 4.7, desc: 'Прогноз погоды с реальным API.', color: '#34aadc' },
-            { id: 'wart', name: 'Wart', cat: 'Программы', size: '8 МБ', rating: 4.6, desc: 'Текстовый редактор с форматированием.', color: '#4a6fa5' },
-            { id: 'files', name: 'Файловый менеджер', cat: 'Утилиты', size: '3 МБ', rating: 4.5, desc: 'Управление файлами и папками.', color: '#f5a623' },
-            { id: 'terminal', name: 'Терминал', cat: 'Утилиты', size: '1 МБ', rating: 4.9, desc: 'Командная строка системы.', color: '#4a5568' },
-            { id: 'settings', name: 'Настройки', cat: 'Система', size: '10 МБ', rating: 5.0, desc: 'Персонализация и настройка системы.', color: '#6e6e73' },
-            { id: 'antivirus', name: '365 Antivirus', cat: 'Система', size: '15 МБ', rating: 4.4, desc: 'Защита от вирусов и угроз.', color: '#30b06b' },
-            { id: 'notes', name: 'Заметки', cat: 'Программы', size: '2 МБ', rating: 4.7, desc: 'Быстрые заметки.', color: '#e8c65a' },
-            { id: 'todo', name: 'Задачи', cat: 'Программы', size: '2 МБ', rating: 4.5, desc: 'Список задач и планов.', color: '#ff9f0a' },
-            { id: 'point', name: 'Point', cat: 'Программы', size: '6 МБ', rating: 4.4, desc: 'Рисование и графика.', color: '#ff6b6b' },
-            { id: 'powerpaint', name: 'Power Paint', cat: 'Программы', size: '12 МБ', rating: 4.6, desc: 'Создание презентаций.', color: '#ff9f0a' },
-            { id: 'trash', name: 'Корзина', cat: 'Система', size: '1 МБ', rating: 4.0, desc: 'Удаленные файлы.', color: '#8e8e93' },
-            { id: 'music', name: 'Музыка', cat: 'Программы', size: '10 МБ', rating: 4.3, desc: 'Аудиоплеер.', color: '#e05fb0' },
-            { id: 'clock', name: 'Часы', cat: 'Утилиты', size: '1 МБ', rating: 4.5, desc: 'Часы и секундомер.', color: '#0a84ff' },
-            { id: 'calendar', name: 'Календарь', cat: 'Утилиты', size: '2 МБ', rating: 4.6, desc: 'Календарь событий.', color: '#e8534a' },
+        // Каталог всех доступных приложений из NX.apps
+        const catalog = Object.values(NX.apps).map(app => {
+            // Определяем категорию
+            let cat = 'Программы';
+            if (app.type === 'game') cat = 'Игры';
+            else if (['calc', 'converter', 'weather', 'clock', 'calendar', 'clipboard', 'taskmgr', 'speedtest'].includes(app.id)) cat = 'Утилиты';
+            else if (['settings', 'antivirus', 'trash', 'market', 'files'].includes(app.id)) cat = 'Система';
+            else if (app.id === 'assistant') cat = 'Ассистенты';
             
-            // Игры
-            { id: 'snake', name: 'Змейка', cat: 'Игры', size: '3 МБ', rating: 4.8, desc: 'Классическая аркада.', color: '#30b06b' },
-            { id: 'g2048', name: '2048', cat: 'Игры', size: '2 МБ', rating: 4.9, desc: 'Головоломка с плитками.', color: '#e8ac1f' },
-            { id: 'mines', name: 'Сапёр', cat: 'Игры', size: '2 МБ', rating: 4.7, desc: 'Логическая игра.', color: '#5e6ad2' },
-            { id: 'ttt', name: 'Крестики-нолики', cat: 'Игры', size: '1 МБ', rating: 4.2, desc: 'Классика.', color: '#0a84ff' },
-            { id: 'memory', name: 'Найди пару', cat: 'Игры', size: '2 МБ', rating: 4.5, desc: 'Тренировка памяти.', color: '#e05fb0' },
-            { id: 'pong', name: 'Пинг-понг', cat: 'Игры', size: '1 МБ', rating: 4.4, desc: 'Аркада.', color: '#2b8a5f' },
-            { id: 'reaction', name: 'Реакция', cat: 'Игры', size: '1 МБ', rating: 4.3, desc: 'Проверка скорости.', color: '#f0a24b' },
-            { id: 'guess', name: 'Угадай число', cat: 'Игры', size: '1 МБ', rating: 4.1, desc: 'Логика.', color: '#5e5ce6' },
-            { id: 'tetris', name: 'Тетрис', cat: 'Игры', size: '4 МБ', rating: 4.9, desc: 'Классический тетрис.', color: '#5e5ce6' }
-        ];
+            // Размер (псевдо)
+            const size = (Math.random() * 15 + 2).toFixed(1) + ' МБ';
+            // Рейтинг (псевдо)
+            const rating = (4 + Math.random()).toFixed(1);
+            
+            return {
+                id: app.id,
+                name: app.name,
+                cat: cat,
+                size: size,
+                rating: parseFloat(rating),
+                desc: getAppDescription(app.id),
+                color: app.color || '#0a84ff',
+                icon: app.icon
+            };
+        });
+
+        function getAppDescription(id) {
+            const descs = {
+                calc: 'Простой и удобный калькулятор с поддержкой клавиатуры.',
+                weather: 'Прогноз погоды с реальным API. Данные о температуре, влажности и ветре.',
+                wart: 'Текстовый редактор с форматированием, поиском и экспортом в PDF.',
+                browser: 'Быстрый браузер с поддержкой вкладок и историей.',
+                files: 'Управление файлами и папками.',
+                terminal: 'Командная строка системы с 20+ командами.',
+                settings: 'Персонализация и настройка системы.',
+                antivirus: 'Защита от вирусов и угроз. Сканирование с прогрессом.',
+                trash: 'Удаленные файлы и приложения. Восстановление.',
+                market: 'Магазин приложений Nextel OS.',
+                notes: 'Быстрые заметки с автосохранением.',
+                todo: 'Список задач и планов.',
+                point: 'Рисование и графика. Кисти, фигуры, заливка.',
+                powerpaint: 'Создание презентаций. Темы, заметки, показ.',
+                music: 'Аудиоплеер.',
+                clock: 'Часы и секундомер.',
+                calendar: 'Календарь событий.',
+                snake: 'Классическая аркада. Собирайте яблоки, растите.',
+                g2048: 'Головоломка с плитками. Доберитесь до 2048.',
+                mines: 'Логическая игра. Найдите все мины.',
+                ttt: 'Крестики-нолики против умного ИИ.',
+                pong: 'Классический пинг-понг против ИИ.',
+                reaction: 'Проверка скорости реакции.',
+                guess: 'Угадайте число от 1 до 100.',
+                tetris: 'Классический тетрис.',
+                gallery: 'Просмотр изображений из папки «Изображения».',
+                converter: 'Конвертер единиц измерения: длина, масса, температура.',
+                clipboard: 'История буфера обмена. Копируйте и вставляйте.',
+                taskmgr: 'Диспетчер задач. Список процессов и ресурсы.',
+                assistant: 'Алевтина — ИИ-ассистент. Отвечает на вопросы за 2 секунды.',
+                video: 'Видеоплеер. Воспроизведение .mp4, .webm.',
+                recorder: 'Диктофон. Запись с микрофона.',
+                camera: 'Камера. Снимки с таймером.',
+                sheet: 'Таблица с формулами. Аналог Excel.',
+                pdf: 'Просмотрщик PDF-файлов.',
+                kanban: 'Kanban-доска. Перетаскивание карточек.',
+                pomodoro: 'Тайм-трекер. Pomodoro (25/5/15).',
+                messenger: 'Мессенджер. Локальный чат.',
+                contacts: 'Список контактов.',
+                passwords: 'Менеджер паролей с шифрованием.',
+                speedtest: 'Speed Test. Замер скорости интернета.'
+            };
+            return descs[id] || 'Приложение Nextel OS.';
+        }
 
         let currentCat = 'Все';
         let searchQuery = '';
@@ -441,12 +502,11 @@ NX.registerApp({
             } else {
                 gridHtml = filtered.map(app => {
                     const isInstalled = NX.state.installed.includes(app.id);
-                    const icon = NX.icons[app.id] || NX.icons.info;
                     
                     return `
                         <div class="market-card">
                             <div class="app-icon" style="background: ${app.color}22; color: ${app.color};">
-                                ${icon}
+                                ${app.icon}
                             </div>
                             <div>
                                 <div class="app-name">${NX.esc(app.name)}</div>
@@ -469,10 +529,10 @@ NX.registerApp({
                 <div class="market-app">
                     <div class="market-header">
                         <div class="market-title">NMarket</div>
-                        <div class="market-sub">Магазин приложений Nextel OS</div>
+                        <div class="market-sub">Магазин приложений Nextel OS · ${catalog.length} приложений</div>
                     </div>
                     <div class="market-tabs">
-                        ${['Все', 'Игры', 'Программы', 'Утилиты', 'Система'].map(cat => `
+                        ${['Все', 'Игры', 'Программы', 'Утилиты', 'Система', 'Ассистенты'].map(cat => `
                             <div class="market-tab ${currentCat === cat ? 'active' : ''}" data-cat="${cat}">${cat}</div>
                         `).join('')}
                         <input type="text" class="input" id="market-search" placeholder="Поиск..." style="margin-left:auto;width:200px;height:32px;" value="${NX.esc(searchQuery)}">
@@ -490,18 +550,18 @@ NX.registerApp({
                 };
             });
 
-            NX.$('#market-search', body).oninput = (e) => {
-                searchQuery = e.target.value;
-                render();
-            };
+            const searchEl = NX.$('#market-search', body);
+            if (searchEl) {
+                searchEl.oninput = (e) => {
+                    searchQuery = e.target.value;
+                    render();
+                };
+            }
 
             NX.$$('[data-install]', body).forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.dataset.install;
-                    NX.state.installed.push(id);
-                    NX.saveState();
-                    NX.renderDesktop();
-                    NX.notifications.push('NMarket', `Приложение установлено`, 'check');
+                    NX.installApp(id);
                     render();
                 };
             });
@@ -515,11 +575,12 @@ NX.registerApp({
             NX.$$('[data-remove]', body).forEach(btn => {
                 btn.onclick = () => {
                     const id = btn.dataset.remove;
-                    NX.state.installed = NX.state.installed.filter(i => i !== id);
-                    NX.saveState();
-                    NX.renderDesktop();
-                    NX.notifications.push('NMarket', `Приложение удалено`, 'trash');
-                    render();
+                    const app = NX.apps[id];
+                    if (!app) return;
+                    if (confirm(`Удалить приложение «${app.name}»?`)) {
+                        NX.uninstallApp(id);
+                        render();
+                    }
                 };
             });
         };
