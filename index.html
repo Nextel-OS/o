@@ -1,36 +1,110 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Nextel OS 1.0</title>
-<link rel="stylesheet" href="styles/base.css">
-<link rel="stylesheet" href="styles/shell.css">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#0a84ff">
+    <title>Nextel OS 2.0</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-<div id="boot">
-  <div class="boot-name">Nextel<span>OS</span></div>
-  <div class="boot-stage" id="boot-stage">Инициализация…</div>
-  <div class="boot-progress"><div id="boot-bar"></div></div>
-</div>
+<body class="light-theme">
 
-<div id="desktop">
-  <div id="icons"></div>
-  <div id="marquee"></div>
-</div>
+    <!-- ЭКРАН ЗАГРУЗКИ -->
+    <div id="boot-screen">
+        <div class="boot-logo">
+            <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+                <circle cx="32" cy="32" r="22" stroke-dasharray="104 34" transform="rotate(-45 32 32)"/>
+                <circle cx="32" cy="32" r="7" fill="currentColor" stroke="none"/>
+            </svg>
+        </div>
+        <div class="boot-name">Nextel<span>OS</span></div>
+        <div class="boot-ver">Версия 2.0.0 &nbsp;·&nbsp; сборка 2026</div>
+        <div class="boot-progress-bar"><div id="boot-progress"></div></div>
+        <div class="boot-stage" id="boot-stage">Инициализация ядра...</div>
+    </div>
 
-<div id="taskbar">
-  <button id="startbtn"></button>
-  <button id="searchbtn"></button>
-  <div id="tasks"></div>
-  <div id="tray">
-    <div id="clock"><span id="clk-t">--:--</span></div>
-  </div>
-</div>
+    <!-- ЭКРАН БЛОКИРОВКИ -->
+    <div id="lock-screen">
+        <div class="lock-time" id="lock-time">00:00</div>
+        <div class="lock-date" id="lock-date">1 января</div>
+        <div class="lock-user">
+            <div class="lock-avatar">U</div>
+            <div class="lock-name">Пользователь Nextel</div>
+            <div class="lock-input-wrap">
+                <input type="password" id="lock-pin" placeholder="PIN-код" maxlength="4">
+                <button id="lock-btn">&rarr;</button>
+            </div>
+            <div class="lock-hint">Введите 1234 или нажмите Enter</div>
+        </div>
+        <div class="lock-bottom">
+            <button class="lock-power-btn" id="lock-reboot-btn" title="Перезагрузка"></button>
+            <button class="lock-power-btn" id="lock-shutdown-btn" title="Выключение"></button>
+        </div>
+    </div>
 
-<div id="startmenu"></div>
-<div id="ctxmenu"></div>
+    <!-- ЭКРАНЫ ПИТАНИЯ -->
+    <div id="power-off-screen">
+        <div class="power-spinner"></div>
+        <div class="power-text">Завершение работы...</div>
+    </div>
+    
+    <div id="reboot-screen">
+        <div class="power-spinner"></div>
+        <div class="power-text">Перезагрузка...</div>
+    </div>
 
-<script src="js/boot.js"></script>
+    <!-- РАБОЧИЙ СТОЛ -->
+    <div id="desktop">
+        <div id="widgets-container"></div>
+        <div id="icons-container"></div>
+        <div id="selection-marquee"></div>
+    </div>
+
+    <!-- СЛОЙ ОКОН -->
+    <div id="windows-layer"></div>
+
+    <!-- ПАНЕЛЬ ЗАДАЧ -->
+    <div id="taskbar">
+        <button id="start-btn" title="Пуск"></button>
+        <button id="search-btn" title="Поиск (Ctrl+Space)"></button>
+        <div id="tasks-container"></div>
+        <div id="system-tray">
+            <div class="tray-icons">
+                <button id="tray-notifications" title="Уведомления"></button>
+                <button id="tray-quick-settings" title="Быстрые настройки"></button>
+            </div>
+            <div id="tray-clock">
+                <div id="clock-time">00:00</div>
+                <div id="clock-date">01.01.2026</div>
+            </div>
+            <div id="tray-show-desktop" title="Свернуть все окна"></div>
+        </div>
+    </div>
+
+    <!-- ОВЕРЛЕИ И МЕНЮ -->
+    <div id="start-menu"></div>
+    <div id="context-menu"></div>
+    <div id="notification-center"></div>
+    <div id="quick-settings-panel"></div>
+    <div id="calendar-popup"></div>
+    <div id="spotlight-overlay">
+        <div class="spotlight-box">
+            <input type="text" id="spotlight-input" placeholder="Поиск приложений, файлов и настроек..." autocomplete="off">
+            <div id="spotlight-results"></div>
+        </div>
+    </div>
+    <div id="task-view-overlay"></div>
+    <div id="toast-container"></div>
+    <div id="clipboard-panel"></div>
+
+    <!-- ПОДКЛЮЧЕНИЕ МОДУЛЕЙ -->
+    <script src="core.js"></script>
+    <script src="ui.js"></script>
+    <script src="system.js"></script>
+    <script src="apps_prod.js"></script>
+    <script src="apps_net.js"></script>
+    <script src="apps_util.js"></script>
+    <script src="games_1.js"></script>
+    <script src="games_2.js"></script>
 </body>
 </html>
