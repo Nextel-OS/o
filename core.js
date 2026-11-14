@@ -69,14 +69,35 @@ NX.icons = {
     tetris: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="10" y="4" width="6" height="6" rx="1"/><rect x="10" y="10" width="6" height="6" rx="1"/><rect x="16" y="10" width="6" height="6" rx="1"/></svg>`,
     market: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5.5 8h13l-1.2 12.1a1 1 0 0 1-1 .9H7.7a1 1 0 0 1-1-.9L5.5 8Z"/><path d="M9 8V6.2A3 3 0 0 1 12 3a3 3 0 0 1 3 3.2V8"/></svg>`,
     clipboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg>`,
-    monitor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`
+    monitor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`,
+    
+    // Новые иконки для приложений из списка
+    gallery: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M4 17l4.5-4.5L13 17l3-3 4 4"/></svg>`,
+    video: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M10 9l5 3-5 3V9z" fill="currentColor" stroke="none"/></svg>`,
+    recorder: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg>`,
+    camera: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 7h4l2-3h6l2 3h4a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="4"/></svg>`,
+    sheet: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>`,
+    pdf: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 13h1.5a1.5 1.5 0 0 1 0 3H9v-3z"/></svg>`,
+    kanban: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="5" height="16" rx="1"/><rect x="10" y="4" width="5" height="10" rx="1"/><rect x="17" y="4" width="5" height="13" rx="1"/></svg>`,
+    pomodoro: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 3h6"/></svg>`,
+    messenger: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12a8 8 0 0 1-12 7l-5 1 1-5A8 8 0 1 1 21 12z"/></svg>`,
+    contacts: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>`,
+    passwords: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15" r="1.5" fill="currentColor"/></svg>`,
+    converter: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8.5h13l-3.2-3.2M20 15.5H7l3.2 3.2"/></svg>`,
+    speedtest: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 18a8 8 0 0 1 16 0"/><path d="M12 18l4-5"/><circle cx="12" cy="18" r="1.5" fill="currentColor"/></svg>`,
+    assistant: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="6" width="16" height="12" rx="3"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/><path d="M12 2v4M8 20v2M16 20v2"/></svg>`
 };
 
 // --- СОСТОЯНИЕ И НАСТРОЙКИ ---
 const DEFAULT_STATE = {
     theme: 'light',
     wallpaper: 0,
-    installed: ['calc', 'weather', 'wart', 'files', 'terminal', 'browser', 'settings', 'antivirus', 'trash', 'market', 'notes', 'todo', 'point', 'powerpaint', 'music', 'clock', 'calendar', 'snake', 'g2048'],
+    installed: [
+        'calc', 'weather', 'wart', 'files', 'terminal', 'browser', 'settings',
+        'antivirus', 'trash', 'market', 'notes', 'todo', 'point', 'powerpaint',
+        'music', 'clock', 'calendar', 'snake', 'g2048',
+        'gallery', 'converter', 'clipboard', 'taskmgr', 'assistant'
+    ],
     trash: [],
     volume: 80,
     brightness: 100,
@@ -93,7 +114,8 @@ const DEFAULT_STATE = {
     ],
     notes: [
         { id: 1, title: 'Добро пожаловать', content: 'Это заметка в Nextel OS.', date: new Date().toISOString() }
-    ]
+    ],
+    clipboardHistory: []
 };
 
 NX.state = {};
@@ -110,13 +132,66 @@ NX.loadState = () => {
     try {
         const saved = JSON.parse(localStorage.getItem('nx_state_v2'));
         if (saved) {
+            // Мерж: если в saved есть новые поля — сохраняем, если нет — используем дефолт
             NX.state = { ...DEFAULT_STATE, ...saved };
+            // Убедимся, что все базовые приложения на месте (на случай старых сохранений)
+            DEFAULT_STATE.installed.forEach(id => {
+                if (!NX.state.installed.includes(id) && !NX.state.trash.some(t => t.id === id)) {
+                    NX.state.installed.push(id);
+                }
+            });
         } else {
             NX.state = { ...DEFAULT_STATE };
         }
     } catch (e) {
         NX.state = { ...DEFAULT_STATE };
     }
+};
+
+// --- УДАЛЕНИЕ ПРИЛОЖЕНИЙ (ИСПРАВЛЕНО) ---
+/**
+ * Перемещает приложение в корзину, чтобы его можно было восстановить.
+ * Не удаляет файлы и не трогает настройки других приложений.
+ */
+NX.uninstallApp = function(appId) {
+    const app = NX.apps[appId];
+    if (!app) return false;
+
+    // Удаляем с рабочего стола / из установленных
+    NX.state.installed = NX.state.installed.filter(id => id !== appId);
+
+    // Кладём объект в корзину, чтобы его можно было восстановить
+    NX.state.trash.push({
+        id: appId,
+        name: app.name,
+        type: 'app',
+        icon: app.icon,
+        originalPath: 'installed',
+        removedAt: new Date().toISOString()
+    });
+
+    NX.saveState();
+    if (NX.renderDesktop) NX.renderDesktop();
+    NX.notifications.push('Корзина', `Приложение «${app.name}» перемещено в корзину`, 'trash');
+    return true;
+};
+
+/**
+ * Установка приложения (возврат из корзины или из NMarket).
+ */
+NX.installApp = function(appId) {
+    const app = NX.apps[appId];
+    if (!app) return false;
+    if (NX.state.installed.includes(appId)) return false;
+
+    NX.state.installed.push(appId);
+    // Убираем из корзины, если оно там было
+    NX.state.trash = NX.state.trash.filter(t => t.id !== appId);
+
+    NX.saveState();
+    if (NX.renderDesktop) NX.renderDesktop();
+    NX.notifications.push('Установлено', `Приложение «${app.name}» установлено`, 'check');
+    return true;
 };
 
 // --- ВИРТУАЛЬНАЯ ФС ---
@@ -154,7 +229,9 @@ NX.fs = {
                 date: new Date().toISOString() 
             });
             NX.bus.emit('fs-change');
+            return true;
         }
+        return false;
     },
     
     deleteFile(folderName, fileName) {
@@ -171,10 +248,15 @@ NX.fs = {
             }
         }
         return false;
+    },
+
+    getImages() {
+        const folder = this.root.children.find(c => c.name === 'Изображения');
+        return folder ? folder.children.filter(c => c.kind === 'img') : [];
     }
 };
 
-// --- ЗВУКОВОЙ ДВИЖОК (С ИСПРАВЛЕНИЕМ ОШИБКИ AUDIO CONTEXT) ---
+// --- ЗВУКОВОЙ ДВИЖОК ---
 NX.audio = {
     ctx: null,
     unlocked: false,
@@ -192,7 +274,6 @@ NX.audio = {
         }
     },
 
-    // Разблокировка по первому клику
     unlock() {
         if (this.unlocked) return;
         this.init();
@@ -201,7 +282,7 @@ NX.audio = {
     },
     
     playTone(freq, dur, type = 'sine', vol = 0.05) {
-        if (!this.unlocked) return; // Не играем, пока не было клика
+        if (!this.unlocked) return;
         this.init();
         if (!this.ctx) return;
         
@@ -355,6 +436,8 @@ NX.clipboard = {
     init() {
         document.addEventListener('copy', this.handleCopy.bind(this));
         document.addEventListener('cut', this.handleCopy.bind(this));
+        // Восстановление истории из state
+        if (NX.state.clipboardHistory) this.items = NX.state.clipboardHistory;
     },
     
     handleCopy(e) {
@@ -369,6 +452,9 @@ NX.clipboard = {
         this.items = this.items.filter(t => t !== text);
         this.items.unshift(text);
         if (this.items.length > 20) this.items.pop();
+        
+        NX.state.clipboardHistory = this.items;
+        NX.saveState();
         
         NX.notifications.push('Буфер обмена', 'Текст скопирован', 'clipboard');
     },
@@ -385,7 +471,7 @@ NX.clipboard = {
         let html = `
             <div class="cb-header">
                 <span>Буфер обмена</span>
-                <div class="t-close" style="width:24px;height:24px;cursor:pointer;">${NX.icons.close}</div>
+                <div class="t-close" style="width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;">${NX.icons.close}</div>
             </div>
             <div class="cb-list">
         `;
@@ -431,6 +517,6 @@ NX.bus = {
     }
 };
 
-// Инициализация ядра
+// --- ИНИЦИАЛИЗАЦИЯ ЯДРА ---
 NX.loadState();
 NX.clipboard.init();
