@@ -31,7 +31,6 @@ NX.registerApp({
         const input = NX.$('#term-input', body);
         const pathLabel = NX.$('#term-path', body);
 
-        // Обновление пути в приглашении
         const updatePrompt = () => {
             const p = currentPath.length === 0 ? '~' : '~/' + currentPath.join('/');
             pathLabel.textContent = `user@nextel:${p}$`;
@@ -229,7 +228,6 @@ NX.registerApp({
             }
         };
 
-        // Обработка ввода
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const rawCmd = input.value.trim();
@@ -239,14 +237,11 @@ NX.registerApp({
                     return;
                 }
 
-                // Сохраняем в историю
                 if (history[history.length - 1] !== rawCmd) history.push(rawCmd);
                 historyIndex = history.length;
 
-                // Выводим введенную команду
                 print(`<span class="term-prompt">user@nextel:${currentPath.length === 0 ? '~' : '~/' + currentPath.join('/')}$</span> ${NX.esc(rawCmd)}`);
 
-                // Парсим команду
                 const parts = rawCmd.split(' ');
                 const cmd = parts[0].toLowerCase();
                 const args = parts.slice(1);
@@ -261,7 +256,6 @@ NX.registerApp({
                 output.scrollTop = output.scrollHeight;
             }
             
-            // Стрелки вверх/вниз для истории
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
                 if (historyIndex > 0) {
@@ -280,7 +274,6 @@ NX.registerApp({
             }
         });
 
-        // Клик по терминалу фокусирует ввод
         body.onclick = () => input.focus();
         updatePrompt();
         setTimeout(() => input.focus(), 100);
@@ -308,7 +301,6 @@ NX.registerApp({
             
             let itemsHtml = '';
             if (node.children && node.children.length > 0) {
-                // Сначала папки, потом файлы
                 const sorted = [...node.children].sort((a, b) => {
                     if (a.type === 'folder' && b.type !== 'folder') return -1;
                     if (a.type !== 'folder' && b.type === 'folder') return 1;
@@ -363,7 +355,6 @@ NX.registerApp({
                 </div>
             `;
 
-            // Обработчики навигации
             NX.$$('.files-nav-item', body).forEach(el => {
                 el.onclick = () => {
                     if (el.dataset.path === 'root') currentPath = [];
@@ -373,14 +364,12 @@ NX.registerApp({
                 };
             });
 
-            // Кнопка "Назад"
             NX.$('#fm-back', body).onclick = () => {
                 currentPath.pop();
                 selectedFile = null;
                 render();
             };
 
-            // Выделение файлов
             NX.$$('.file-item', body).forEach(el => {
                 el.onclick = () => {
                     selectedFile = el.dataset.name;
@@ -396,7 +385,6 @@ NX.registerApp({
                         selectedFile = null;
                         render();
                     } else {
-                        // Открытие файлов
                         const file = node.children.find(c => c.name === name);
                         if (file.kind === 'txt') NX.openApp('wart', { content: file.content, name: file.name });
                         else if (file.kind === 'img') NX.openApp('point', { content: file.content, name: file.name });
@@ -406,7 +394,6 @@ NX.registerApp({
                 };
             });
 
-            // Создание папки
             NX.$('#fm-new-folder', body).onclick = () => {
                 const name = prompt('Имя новой папки:', 'Новая папка');
                 if (name) {
@@ -415,7 +402,6 @@ NX.registerApp({
                 }
             };
 
-            // Удаление
             NX.$('#fm-delete', body).onclick = () => {
                 if (!selectedFile) return;
                 const idx = node.children.findIndex(c => c.name === selectedFile);
@@ -495,12 +481,10 @@ NX.registerApp({
                 };
             });
 
-            // Восстановление
             NX.$('#tr-restore', body).onclick = () => {
                 if (selectedItem === null) return;
                 const item = NX.state.trash.splice(selectedItem, 1)[0];
                 
-                // Восстанавливаем по оригинальному пути
                 let targetNode = NX.fs.root;
                 if (item.originalPath) {
                     const pathParts = item.originalPath.split('/').filter(Boolean);
@@ -519,7 +503,6 @@ NX.registerApp({
                 render();
             };
 
-            // Очистка
             NX.$('#tr-empty', body).onclick = () => {
                 if (confirm('Вы уверены, что хотите безвозвратно удалить все объекты?')) {
                     NX.state.trash = [];
@@ -613,14 +596,13 @@ NX.registerApp({
             NX.audio.open();
 
             scanInterval = setInterval(() => {
-                progress += Math.random() * 5 + 1; // Имитация
+                progress += Math.random() * 5 + 1;
                 
                 if (progress >= 100) {
                     progress = 100;
                     clearInterval(scanInterval);
                     isScanning = false;
                     
-                    // Сохраняем результат
                     NX.state.antivirusStatus = 'protected';
                     NX.state.antivirusResult = 'Угроз не обнаружено. Устройство в безопасности.';
                     NX.state.avFilesScanned = type === 'quick' ? '1 248' : '12 480';
@@ -631,7 +613,6 @@ NX.registerApp({
                     NX.audio.notify();
                 }
                 
-                // Обновляем только прогресс, чтобы не перерендеривать всё
                 const circle = body.querySelector('.av-shield circle:nth-child(2)');
                 const statusText = body.querySelector('.av-sub-text');
                 if (circle) circle.style.strokeDashoffset = 283 - (283 * progress / 100);
@@ -650,10 +631,8 @@ NX.registerApp({
     icon: NX.icons.todo,
     w: 500, h: 600,
     render(body) {
-        // Инициализация состояния, если нет
         if (!NX.state.tasks) NX.state.tasks = [
-            { id: 1, text: 'Изучить Nextel OS', done: false },
-            { id: 2, text: 'Настроить рабочий стол', done: true }
+            { id: 1, text: 'Изучить Nextel OS', done: false }
         ];
 
         const render = () => {
@@ -687,7 +666,6 @@ NX.registerApp({
                 </div>
             `;
 
-            // Добавление
             NX.$('#todo-add', body).onclick = () => {
                 const input = NX.$('#todo-input', body);
                 const text = input.value.trim();
@@ -703,7 +681,6 @@ NX.registerApp({
                 if (e.key === 'Enter') NX.$('#todo-add', body).click();
             };
 
-            // Чекбоксы
             NX.$$('input[type="checkbox"]', body).forEach(cb => {
                 cb.onchange = (e) => {
                     const id = parseInt(cb.dataset.id);
@@ -716,7 +693,6 @@ NX.registerApp({
                 };
             });
 
-            // Удаление
             NX.$$('.del-btn', body).forEach(btn => {
                 btn.onclick = () => {
                     const id = parseInt(btn.dataset.del);
@@ -759,7 +735,7 @@ NX.registerApp({
                 <div class="notes-app">
                     <div class="notes-sidebar">
                         <div style="padding:12px;">
-                            <button class="btn primary" id="note-new" style="width:100%;">${NX.icons.plus || NX.icons.x} Новая заметка</button>
+                            <button class="btn primary" id="note-new" style="width:100%;">${NX.icons.x} Новая заметка</button>
                         </div>
                         <div class="notes-list">
                             ${listHtml}
@@ -776,7 +752,6 @@ NX.registerApp({
                 </div>
             `;
 
-            // Выбор заметки
             NX.$$('.note-item', body).forEach(el => {
                 el.onclick = () => {
                     currentNoteId = parseInt(el.dataset.id);
@@ -784,7 +759,6 @@ NX.registerApp({
                 };
             });
 
-            // Создание заметки
             NX.$('#note-new', body).onclick = () => {
                 const newNote = {
                     id: Date.now(),
@@ -799,7 +773,6 @@ NX.registerApp({
                 setTimeout(() => NX.$('#note-title', body).focus(), 100);
             };
 
-            // Редактирование
             if (activeNote) {
                 const titleInput = NX.$('#note-title', body);
                 const contentInput = NX.$('#note-content', body);
@@ -810,10 +783,8 @@ NX.registerApp({
                     activeNote.date = new Date().toISOString();
                     NX.saveState();
                     
-                    // Обновляем список для отображения превью (с задержкой, чтобы не тормозило)
                     clearTimeout(window._noteSaveTimer);
                     window._noteSaveTimer = setTimeout(() => {
-                        // Найдем текущий элемент в списке и обновим текст
                         const listItem = body.querySelector(`.note-item[data-id="${activeNote.id}"]`);
                         if (listItem) {
                             listItem.querySelector('.n-title').textContent = activeNote.title || 'Без названия';
