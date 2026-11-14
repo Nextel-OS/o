@@ -36,7 +36,8 @@ NX.boot = {
         };
 
         setTimeout(() => {
-            NX.audio.boot(); // Безопасно, так как AudioContext разблокируется позже
+            // Звук загрузки (если уже разблокирован)
+            if (NX.audio.unlocked) NX.audio.boot();
             nextStep();
         }, 500);
     },
@@ -253,17 +254,19 @@ NX.spotlight = {
         const q = query.toLowerCase();
         let html = '';
 
-        // Поиск приложений
-        const apps = NX.state.installed
-            .map(id => NX.apps[id])
-            .filter(app => app && app.name.toLowerCase().includes(q));
+        // Поиск приложений (по всем установленным + по тем, что в корзине)
+        const allApps = Object.values(NX.apps);
+        const matchedApps = allApps.filter(app => 
+            app.name.toLowerCase().includes(q) || (app.id && app.id.toLowerCase().includes(q))
+        );
 
-        apps.forEach(app => {
+        matchedApps.forEach(app => {
+            const isInstalled = NX.state.installed.includes(app.id);
             html += `
                 <div class="sp-result" data-action="app" data-id="${app.id}">
                     <span style="color:var(--accent)">${app.icon}</span>
                     <div class="sp-title">${NX.esc(app.name)}</div>
-                    <div class="sp-cat">Приложение</div>
+                    <div class="sp-cat">${isInstalled ? 'Приложение' : 'Установить'}</div>
                 </div>
             `;
         });
@@ -279,6 +282,36 @@ NX.spotlight = {
             `;
         }
 
+        if ('настройки параметры система'.includes(q)) {
+            html += `
+                <div class="sp-result" data-action="settings">
+                    <span style="color:var(--accent)">${NX.icons.device}</span>
+                    <div class="sp-title">Настройки системы</div>
+                    <div class="sp-cat">Система</div>
+                </div>
+            `;
+        }
+
+        if ('буфер обмена clipboard'.includes(q)) {
+            html += `
+                <div class="sp-result" data-action="clipboard">
+                    <span style="color:var(--accent)">${NX.icons.clipboard}</span>
+                    <div class="sp-title">Буфер обмена</div>
+                    <div class="sp-cat">Утилита</div>
+                </div>
+            `;
+        }
+
+        if ('алевтина ассистент помощник ии'.includes(q)) {
+            html += `
+                <div class="sp-result" data-action="app" data-id="assistant">
+                    <span style="color:var(--accent)">${NX.icons.assistant}</span>
+                    <div class="sp-title">Алевтина</div>
+                    <div class="sp-cat">Ассистент</div>
+                </div>
+            `;
+        }
+
         results.innerHTML = html || `<div style="padding: 20px; text-align: center; color: var(--text-muted);">Ничего не найдено</div>`;
 
         results.querySelectorAll('.sp-result').forEach(el => {
@@ -286,10 +319,23 @@ NX.spotlight = {
                 const action = el.dataset.action;
                 if (action === 'app') {
                     this.close();
-                    NX.openApp(el.dataset.id);
+                    const appId = el.dataset.id;
+                    if (NX.state.installed.includes(appId)) {
+                        NX.openApp(appId);
+                    } else {
+                        NX.installApp(appId);
+                        NX.openApp(appId);
+                    }
                 } else if (action === 'power') {
                     this.close();
                     NX.startMenu.showPowerMenu();
+                } else if (action === 'settings') {
+                    this.close();
+                    NX.openApp('settings');
+                } else if (action === 'clipboard') {
+                    this.close();
+                    NX.clipboard.renderPanel();
+                    NX.$('#clipboard-panel').classList.add('open');
                 }
             };
         });
@@ -579,37 +625,69 @@ NX.initSystem = () => {
     NX.$('#lock-reboot-btn').onclick = () => NX.boot.reboot();
     NX.$('#lock-shutdown-btn').onclick = () => NX.boot.shutdown();
 
-    // Глобальные горячие клавиши
+    // ===== ГЛОБАЛЬНЫЕ ГОРЯЧИЕ КЛАВИШИ =====
     document.addEventListener('keydown', (e) => {
-        // Win key (Мета)
+        // Win key (Мета) — меню Пуск
         if (e.key === 'Meta') {
             e.preventDefault();
             NX.startMenu.toggle();
         }
-        
-        // Ctrl + Space (Spotlight)
+
+        // Win + L — блокировка
+        if (e.metaKey && e.key.toLowerCase() === 'l') {
+            e.preventDefault();
+            NX.boot.lock();
+        }
+
+        // Win + V — буфер обмена
+        if (e.metaKey && e.key.toLowerCase() === 'v') {
+            e.preventDefault();
+            NX.clipboard.renderPanel();
+            NX.$('#clipboard-panel').classList.add('open');
+        }
+
+        // Win + D — свернуть все окна
+        if (e.metaKey && e.key.toLowerCase() === 'd') {
+            e.preventDefault();
+            NX.windows.list.forEach(w => NX.minimizeWindow(w));
+        }
+
+        // Ctrl + Space — Spotlight
         if (e.ctrlKey && e.code === 'Space') {
             e.preventDefault();
             NX.spotlight.open();
         }
 
-        // Alt + Tab (Task View)
+        // Ctrl + Shift + Esc — Диспетчер задач
+        if (e.ctrlKey && e.shiftKey && e.key === 'Escape') {
+            e.preventDefault();
+            NX.openApp('taskmgr');
+        }
+
+        // Ctrl + Shift + A — Алевтина
+        if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
+            e.preventDefault();
+            NX.openApp('assistant');
+        }
+
+        // Alt + Tab — Task View
         if (e.altKey && e.key === 'Tab') {
             e.preventDefault();
             NX.taskView.open();
         }
 
-        // Ctrl + W (Закрыть активное окно)
+        // Ctrl + W — Закрыть активное окно
         if (e.ctrlKey && e.key.toLowerCase() === 'w' && NX.windows.focused) {
             e.preventDefault();
             NX.closeWindow(NX.windows.focused);
         }
 
-        // Escape (Закрытие оверлеев)
+        // Escape — закрытие оверлеев
         if (e.key === 'Escape') {
             NX.spotlight.close();
             NX.$('#task-view-overlay').classList.remove('open');
             NX.$('#context-menu').classList.remove('open');
+            NX.$('#clipboard-panel').classList.remove('open');
         }
     });
 
