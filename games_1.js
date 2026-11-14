@@ -7,6 +7,8 @@ NX.registerApp({
     id: 'snake',
     name: 'Змейка',
     icon: NX.icons.snake,
+    color: '#30b06b',
+    type: 'game',
     w: 500, h: 550,
     render(body, ctx) {
         body.innerHTML = `
@@ -146,6 +148,8 @@ NX.registerApp({
     id: 'g2048',
     name: '2048',
     icon: NX.icons.g2048,
+    color: '#e8ac1f',
+    type: 'game',
     w: 400, h: 520,
     render(body, ctx) {
         body.innerHTML = `
@@ -227,7 +231,6 @@ NX.registerApp({
 
         const move = (dir) => {
             const before = board.join(',');
-            let mergedIndices = [];
             
             if (dir === 'left') {
                 for (let r = 0; r < 4; r++) {
@@ -290,6 +293,8 @@ NX.registerApp({
     id: 'mines',
     name: 'Сапёр',
     icon: NX.icons.mines,
+    color: '#5e6ad2',
+    type: 'game',
     w: 450, h: 550,
     render(body) {
         body.innerHTML = `
@@ -465,6 +470,8 @@ NX.registerApp({
     id: 'ttt',
     name: 'Крестики-нолики',
     icon: NX.icons.ttt,
+    color: '#0a84ff',
+    type: 'game',
     w: 400, h: 500,
     render(body) {
         body.innerHTML = `
@@ -605,7 +612,9 @@ NX.registerApp({
 NX.registerApp({
     id: 'puzzle15',
     name: 'Пятнашки',
-    icon: NX.icons.grid || NX.icons.g2048,
+    icon: NX.icons.g2048,
+    color: '#f0a24b',
+    type: 'game',
     w: 400, h: 480,
     render(body) {
         body.innerHTML = `
