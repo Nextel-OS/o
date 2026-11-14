@@ -7,6 +7,8 @@ NX.registerApp({
     id: 'tetris',
     name: 'Тетрис',
     icon: NX.icons.tetris,
+    color: '#5e5ce6',
+    type: 'game',
     w: 450, h: 600,
     render(body, ctx) {
         body.innerHTML = `
@@ -250,6 +252,8 @@ NX.registerApp({
     id: 'pong',
     name: 'Пинг-понг',
     icon: NX.icons.pong,
+    color: '#2b8a5f',
+    type: 'game',
     w: 600, h: 450,
     render(body, ctx) {
         body.innerHTML = `
@@ -377,6 +381,8 @@ NX.registerApp({
     id: 'breakout',
     name: 'Арканоид',
     icon: NX.icons.g2048,
+    color: '#ff9f0a',
+    type: 'game',
     w: 600, h: 500,
     render(body, ctx) {
         body.innerHTML = `
@@ -534,6 +540,8 @@ NX.registerApp({
     id: 'reaction',
     name: 'Реакция',
     icon: NX.icons.reaction,
+    color: '#f0a24b',
+    type: 'game',
     w: 500, h: 400,
     render(body) {
         body.innerHTML = `
@@ -558,14 +566,6 @@ NX.registerApp({
         let best = parseInt(localStorage.getItem('nx_react_best') || '0');
         
         if (best > 0) bestEl.textContent = best;
-
-        const reset = () => {
-            clearTimeout(timeoutId);
-            state = 'idle';
-            box.style.background = '#3b82f6';
-            box.textContent = 'Нажмите, чтобы начать';
-            box.style.cursor = 'pointer';
-        };
 
         box.onclick = () => {
             if (state === 'idle' || state === 'result') {
@@ -613,6 +613,8 @@ NX.registerApp({
     id: 'guess',
     name: 'Угадай число',
     icon: NX.icons.guess,
+    color: '#5e5ce6',
+    type: 'game',
     w: 450, h: 450,
     render(body) {
         body.innerHTML = `
