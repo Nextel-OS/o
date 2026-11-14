@@ -13,10 +13,7 @@ NX.windows = {
 // --- РЕГИСТРАЦИЯ ПРИЛОЖЕНИЙ ---
 NX.registerApp = function(config) {
     NX.apps[config.id] = Object.assign({
-        w: 600,
-        h: 450,
-        single: false,
-        type: 'app'
+        w: 600, h: 450, single: false, type: 'app'
     }, config);
 };
 
@@ -28,7 +25,7 @@ NX.openApp = function(appId, args = {}) {
         return;
     }
 
-    // Проверка на синглтон (например, калькулятор)
+    // Синглтон (например, калькулятор)
     if (app.single) {
         const existing = NX.windows.list.find(w => w.appId === appId);
         if (existing) {
@@ -43,7 +40,7 @@ NX.openApp = function(appId, args = {}) {
     win.style.width = Math.min(app.w, window.innerWidth - 40) + 'px';
     win.style.height = Math.min(app.h, window.innerHeight - 100) + 'px';
     
-    // Каскадное открытие окон
+    // Каскад
     const offset = (NX.windows.list.length % 8) * 24;
     win.style.left = Math.max(20, (window.innerWidth - app.w) / 2 - 100 + offset) + 'px';
     win.style.top = Math.max(20, (window.innerHeight - app.h) / 2 - 50 + offset) + 'px';
@@ -80,18 +77,16 @@ NX.openApp = function(appId, args = {}) {
 
     const content = NX.$('.window-content', win);
     const ctx = {
-        win: rec,
-        body: content,
-        args: args,
+        win: rec, body: content, args: args,
         onClose: (fn) => rec.cleanups.push(fn)
     };
 
-    // Обработчики кнопок окна
+    // Кнопки окна
     NX.$('.btn-min', win).onclick = (e) => { e.stopPropagation(); NX.minimizeWindow(rec); };
     NX.$('.btn-max', win).onclick = (e) => { e.stopPropagation(); NX.maximizeWindow(rec); };
     NX.$('.btn-close', win).onclick = (e) => { e.stopPropagation(); NX.closeWindow(rec); };
 
-    // Фокус при клике
+    // Фокус
     win.addEventListener('mousedown', () => NX.focusWindow(rec), true);
 
     // Перетаскивание и ресайз
@@ -151,15 +146,14 @@ NX.maximizeWindow = function(rec) {
         win.classList.add('maximized');
         rec.maximized = true;
     }
-    // Триггер ресайза для приложений (например, canvas)
+    // Важно для игр и канвасов
     window.dispatchEvent(new Event('resize'));
 };
 
 NX.closeWindow = function(rec) {
-    // Очистка таймеров и слушателей приложения
+    // Очистка таймеров игр
     rec.cleanups.forEach(fn => { try { fn(); } catch(e) { console.error(e); } });
     
-    // Анимация закрытия
     rec.el.classList.add('closing');
     setTimeout(() => {
         rec.el.remove();
@@ -222,6 +216,7 @@ NX.makeResizable = function(win, grip, rec) {
 // --- ПАНЕЛЬ ЗАДАЧ ---
 NX.refreshTaskbar = function() {
     const container = NX.$('#tasks-container');
+    if (!container) return;
     container.innerHTML = '';
     
     NX.windows.list.forEach(rec => {
@@ -250,10 +245,11 @@ NX.refreshTaskbar = function() {
 // --- РАБОЧИЙ СТОЛ ---
 NX.renderDesktop = function() {
     const container = NX.$('#icons-container');
+    if (!container) return;
     container.innerHTML = '';
     
-    const apps = NX.state.installed.map(id => NX.apps[id]).filter(Boolean);
-    // Сортировка по имени
+    // Делаем копию, чтобы не мутировать оригинал при сортировке
+    const apps = [...NX.state.installed].map(id => NX.apps[id]).filter(Boolean);
     apps.sort((a, b) => a.name.localeCompare(b.name));
     
     apps.forEach(app => {
@@ -265,7 +261,6 @@ NX.renderDesktop = function() {
             <span class="label">${NX.esc(app.name)}</span>
         `;
         
-        // Выделение
         el.addEventListener('mousedown', (e) => {
             e.stopPropagation();
             if (!e.ctrlKey) {
@@ -274,12 +269,10 @@ NX.renderDesktop = function() {
             el.classList.add('selected');
         });
         
-        // Открытие
         el.addEventListener('dblclick', () => {
             NX.openApp(app.id);
         });
         
-        // Контекстное меню на иконке
         el.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -303,7 +296,7 @@ NX.renderDesktop = function() {
     });
 };
 
-// --- РАМКА ВЫДЕЛЕНИЯ (MARQUEE) ---
+// --- ВЫДЕЛЕНИЕ РАМКОЙ (MARQUEE) ---
 NX.initMarquee = function() {
     const desktop = NX.$('#desktop');
     const marquee = NX.$('#selection-marquee');
@@ -311,11 +304,9 @@ NX.initMarquee = function() {
     let startX, startY;
 
     desktop.addEventListener('mousedown', (e) => {
-        // Если кликнули по иконке, виджету или окну — игнорируем
         if (e.target.closest('.desktop-icon') || e.target.closest('.widget') || e.target.closest('.window')) return;
         if (e.button !== 0) return;
 
-        // Снимаем выделение
         NX.$$('.desktop-icon').forEach(x => x.classList.remove('selected'));
 
         isSelecting = true;
@@ -341,7 +332,6 @@ NX.initMarquee = function() {
             
             Object.assign(marquee.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' });
 
-            // Проверяем пересечение с иконками
             NX.$$('.desktop-icon').forEach(icon => {
                 const ir = icon.getBoundingClientRect();
                 const ix = ir.left - rect.left;
@@ -364,9 +354,10 @@ NX.initMarquee = function() {
     });
 };
 
-// --- КОНТЕКСТНОЕ МЕНЮ (ОБЩЕЕ) ---
+// --- КОНТЕКСТНОЕ МЕНЮ ---
 NX.showContextMenu = function(x, y, items) {
     const menu = NX.$('#context-menu');
+    if (!menu) return;
     menu.innerHTML = '';
     
     items.forEach(item => {
@@ -382,7 +373,7 @@ NX.showContextMenu = function(x, y, items) {
         `;
         el.onclick = () => {
             menu.classList.remove('open');
-            item.action();
+            if (item.action) item.action();
         };
         menu.appendChild(el);
     });
@@ -391,7 +382,6 @@ NX.showContextMenu = function(x, y, items) {
     menu.style.left = '0px';
     menu.style.top = '0px';
     
-    // Проверка, чтобы меню не уходило за экран
     const rect = menu.getBoundingClientRect();
     menu.style.left = Math.min(x, window.innerWidth - rect.width - 10) + 'px';
     menu.style.top = Math.min(y, window.innerHeight - rect.height - 10) + 'px';
@@ -400,25 +390,15 @@ NX.showContextMenu = function(x, y, items) {
 // Закрытие меню при клике вне его
 document.addEventListener('mousedown', (e) => {
     if (!e.target.closest('#context-menu')) {
-        NX.$('#context-menu').classList.remove('open');
-    }
-    if (!e.target.closest('#start-menu') && !e.target.closest('#start-btn')) {
-        NX.$('#start-menu').classList.remove('open');
-    }
-    if (!e.target.closest('#quick-settings-panel') && !e.target.closest('#tray-quick-settings')) {
-        NX.$('#quick-settings-panel').classList.remove('open');
-    }
-    if (!e.target.closest('#notification-center') && !e.target.closest('#tray-notifications')) {
-        NX.$('#notification-center').classList.remove('open');
-    }
-    if (!e.target.closest('#calendar-popup') && !e.target.closest('#tray-clock')) {
-        NX.$('#calendar-popup').classList.remove('open');
+        const cm = NX.$('#context-menu');
+        if (cm) cm.classList.remove('open');
     }
 });
 
-// --- ВИДЖЕТЫ ---
+// --- ВИДЖЕТЫ (С ПЕРЕТАСКИВАНИЕМ) ---
 NX.renderWidgets = function() {
     const container = NX.$('#widgets-container');
+    if (!container) return;
     container.innerHTML = '';
 
     NX.state.widgets.forEach((w, index) => {
@@ -440,7 +420,6 @@ NX.renderWidgets = function() {
                 <div style="font-size:36px;font-weight:300;letter-spacing:-1px;" class="w-temp">--°</div>
                 <div style="font-size:12px;color:var(--text-muted);">Москва</div>
             `;
-            // Запрос погоды
             fetch('https://api.open-meteo.com/v1/forecast?latitude=55.75&longitude=37.62&current=temperature_2m')
                 .then(r => r.json())
                 .then(d => {
@@ -450,7 +429,6 @@ NX.renderWidgets = function() {
                 }).catch(() => {});
         }
 
-        // Обновление времени
         if (w.type === 'clock') {
             const updateTime = () => {
                 const d = new Date();
@@ -460,15 +438,15 @@ NX.renderWidgets = function() {
                 if(dEl) dEl.textContent = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
             };
             updateTime();
-            setInterval(updateTime, 10000); // Обновляем раз в 10 сек (для оптимизации)
+            setInterval(updateTime, 10000);
         }
 
-        // Перетаскивание виджета
+        // Перетаскивание
         let startX, startY, startTop, startRight;
         el.addEventListener('pointerdown', (e) => {
-            if (e.target.closest('.widget-header')) {
-                // Тянем только за шапку (или всё тело)
-            }
+            // Не тянем, если кликнули по кнопке или ссылке внутри виджета
+            if (e.target.closest('button') || e.target.closest('a')) return;
+
             el.setPointerCapture(e.pointerId);
             startX = e.clientX;
             startY = e.clientY;
@@ -489,7 +467,7 @@ NX.renderWidgets = function() {
             const onUp = () => {
                 el.removeEventListener('pointermove', onMove);
                 el.removeEventListener('pointerup', onUp);
-                NX.saveState(); // Сохраняем позицию
+                NX.saveState();
             };
 
             el.addEventListener('pointermove', onMove);
@@ -500,22 +478,19 @@ NX.renderWidgets = function() {
     });
 };
 
-// --- ИНИЦИАЛИЗАЦИЯ РАБОЧЕГО СТОЛА ---
+// --- ИНИЦИАЛИЗАЦИЯ ---
 NX.initUI = function() {
     NX.renderDesktop();
     NX.renderWidgets();
     NX.initMarquee();
     NX.refreshTaskbar();
 
-    // Контекстное меню на пустом месте рабочего стола
+    // Контекстное меню на рабочем столе
     NX.$('#desktop').addEventListener('contextmenu', (e) => {
         if (e.target.closest('.desktop-icon') || e.target.closest('.widget')) return;
         e.preventDefault();
         
         NX.showContextMenu(e.clientX, e.clientY, [
-            { label: 'Создать папку', icon: NX.icons.folder, action: () => {
-                NX.notifications.push('Рабочий стол', 'Папка создана (демо)', 'folder');
-            }},
             { label: 'Обновить', icon: NX.icons.refresh, action: () => {
                 NX.renderDesktop();
                 NX.renderWidgets();
