@@ -7,6 +7,7 @@ NX.registerApp({
     id: 'calc',
     name: 'Калькулятор',
     icon: NX.icons.calc,
+    color: '#5e5ce6',
     w: 360, h: 540, single: true,
     render(body) {
         body.innerHTML = `
@@ -125,6 +126,7 @@ NX.registerApp({
         };
 
         document.addEventListener('keydown', keyHandler);
+        updateDisplay();
     }
 });
 
@@ -133,6 +135,7 @@ NX.registerApp({
     id: 'wart',
     name: 'Wart',
     icon: NX.icons.wart,
+    color: '#4a6fa5',
     w: 850, h: 650,
     render(body, ctx) {
         let history = [];
@@ -313,12 +316,13 @@ NX.registerApp({
         // Открытие из ФС
         NX.$('#wart-open', body).onclick = () => {
             const docs = NX.fs.root.children.find(c => c.name === 'Документы');
-            const files = docs.children.filter(c => c.type === 'file');
+            const files = docs.children.filter(c => c.type === 'file' && c.kind === 'txt');
             if (files.length === 0) {
-                NX.notifications.push('Wart', 'Нет файлов в Документах', 'info');
+                NX.notifications.push('Wart', 'Нет текстовых файлов в Документах', 'info');
                 return;
             }
-            const name = prompt('Введите имя файла:', files[0].name);
+            const names = files.map(f => f.name).join('\n');
+            const name = prompt(`Доступные файлы:\n${names}\n\nВведите имя файла:`, files[0].name);
             const file = files.find(f => f.name === name);
             if (file) {
                 editor.innerHTML = file.content;
@@ -355,6 +359,7 @@ NX.registerApp({
     id: 'point',
     name: 'Point',
     icon: NX.icons.point,
+    color: '#ff6b6b',
     w: 850, h: 650,
     render(body, ctx) {
         body.innerHTML = `
@@ -442,13 +447,15 @@ NX.registerApp({
             saveState();
         }, 100);
 
-        window.addEventListener('resize', () => {
+        const onResize = () => {
             const imgData = canvas.toDataURL();
             resizeCanvas();
             const img = new Image();
             img.onload = () => { ctxCanvas.drawImage(img, 0, 0, wrap.clientWidth, wrap.clientHeight); };
             img.src = imgData;
-        });
+        };
+        window.addEventListener('resize', onResize);
+        ctx.onClose(() => window.removeEventListener('resize', onResize));
 
         NX.$('#pt-tool', body).onchange = (e) => {
             tool = e.target.value;
@@ -566,11 +573,24 @@ NX.registerApp({
         canvas.addEventListener('pointercancel', stopDrawing);
 
         NX.$('#pt-save', body).onclick = () => {
-            const name = prompt('Имя файла:', 'Рисунок.png');
+            const name = prompt('Имя файла:', ctx.args && ctx.args.name ? ctx.args.name : 'Рисунок.png');
             if (!name) return;
             NX.fs.addFile('Изображения', name, canvas.toDataURL('image/png'), 'img');
             NX.notifications.push('Point', `Рисунок ${name} сохранен`, 'save');
         };
+
+        // Открытие существующего изображения (из ФМ)
+        if (ctx.args && ctx.args.content) {
+            setTimeout(() => {
+                const img = new Image();
+                img.onload = () => {
+                    ctxCanvas.clearRect(0, 0, canvas.width, canvas.height);
+                    ctxCanvas.drawImage(img, 0, 0, wrap.clientWidth, wrap.clientHeight);
+                    saveState();
+                };
+                img.src = ctx.args.content;
+            }, 200);
+        }
     }
 });
 
@@ -579,6 +599,7 @@ NX.registerApp({
     id: 'powerpaint',
     name: 'Power Paint',
     icon: NX.icons.powerpaint,
+    color: '#ff9f0a',
     w: 950, h: 650,
     render(body, ctx) {
         let slides = [{ title: 'Новая презентация', text: '', notes: '' }];
