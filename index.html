@@ -31,7 +31,7 @@
             <div class="lock-avatar">U</div>
             <div class="lock-name">Пользователь Nextel</div>
             <div class="lock-input-wrap">
-                <input type="password" id="lock-pin" placeholder="PIN-код" maxlength="4">
+                <input type="password" id="lock-pin" placeholder="PIN-код" maxlength="4" autocomplete="off">
                 <button id="lock-btn">&rarr;</button>
             </div>
             <div class="lock-hint">Введите 1234 или нажмите Enter</div>
@@ -42,13 +42,13 @@
         </div>
     </div>
 
-    <!-- ЭКРАНЫ ПИТАНИЯ -->
-    <div id="power-off-screen">
+    <!-- ЭКРАНЫ ПИТАНИЯ (СКРЫТЫ ПО УМОЛЧАНИЮ!) -->
+    <div id="power-off-screen" style="display: none;">
         <div class="power-spinner"></div>
         <div class="power-text">Завершение работы...</div>
     </div>
     
-    <div id="reboot-screen">
+    <div id="reboot-screen" style="display: none;">
         <div class="power-spinner"></div>
         <div class="power-text">Перезагрузка...</div>
     </div>
@@ -87,12 +87,14 @@
     <div id="notification-center"></div>
     <div id="quick-settings-panel"></div>
     <div id="calendar-popup"></div>
+    
     <div id="spotlight-overlay">
         <div class="spotlight-box">
             <input type="text" id="spotlight-input" placeholder="Поиск приложений, файлов и настроек..." autocomplete="off">
             <div id="spotlight-results"></div>
         </div>
     </div>
+    
     <div id="task-view-overlay"></div>
     <div id="toast-container"></div>
     <div id="clipboard-panel"></div>
