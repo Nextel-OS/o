@@ -2,12 +2,12 @@
    NEXTEL OS 2.0 — ПРИЛОЖЕНИЯ ПРОДУКТИВНОСТИ
    ============================================================ */
 
-// --- 1. КАЛЬКУЛЯТОР (Увеличенный и умный) ---
+// --- 1. КАЛЬКУЛЯТОР ---
 NX.registerApp({
     id: 'calc',
     name: 'Калькулятор',
     icon: NX.icons.calc,
-    w: 360, h: 540, single: true, type: 'utility',
+    w: 360, h: 540, single: true,
     render(body) {
         body.innerHTML = `
             <div class="calc-app">
@@ -66,10 +66,7 @@ NX.registerApp({
             }
         };
 
-        body.addEventListener('click', (e) => {
-            const btn = e.target.closest('.calc-btn');
-            if (!btn) return;
-            const k = btn.dataset.k;
+        const handleInput = (k) => {
             NX.audio.click();
 
             if (k === 'C') {
@@ -81,7 +78,7 @@ NX.registerApp({
             } else if ('0123456789'.includes(k)) {
                 if (fresh) { cur = k; fresh = false; }
                 else { cur = cur === '0' ? k : cur + k; }
-            } else if (k === ',') {
+            } else if (k === ',' || k === '.') {
                 if (!cur.includes('.')) cur += '.';
             } else if ('+-*/'.includes(k)) {
                 if (prev !== null && op && !fresh) {
@@ -101,15 +98,33 @@ NX.registerApp({
                 fresh = true;
             }
             updateDisplay();
+        };
+
+        body.addEventListener('click', (e) => {
+            const btn = e.target.closest('.calc-btn');
+            if (btn) handleInput(btn.dataset.k);
         });
-        
+
         // Поддержка клавиатуры
         const keyHandler = (e) => {
             if (!NX.windows.focused || NX.windows.focused.el !== body.closest('.window')) return;
-            if (/[0-9.]/.test(e.key)) btn = k === '.' ? ',' : e.key;
-            // Упростим для примера, только визуальные клики по кнопкам
+            
+            const key = e.key;
+            if (/[0-9]/.test(key)) handleInput(key);
+            else if (key === '.' || key === ',') handleInput(',');
+            else if (key === '+') handleInput('+');
+            else if (key === '-') handleInput('-');
+            else if (key === '*') handleInput('*');
+            else if (key === '/') handleInput('/');
+            else if (key === 'Enter' || key === '=') handleInput('=');
+            else if (key === 'Backspace') {
+                cur = cur.length > 1 ? cur.slice(0, -1) : '0';
+                updateDisplay();
+            }
+            else if (key === 'Escape') handleInput('C');
         };
-        // (для краткости пропустим полную обработку клавиатуры, оставив только кнопки)
+
+        document.addEventListener('keydown', keyHandler);
     }
 });
 
@@ -118,7 +133,7 @@ NX.registerApp({
     id: 'wart',
     name: 'Wart',
     icon: NX.icons.wart,
-    w: 800, h: 600,
+    w: 850, h: 650,
     render(body, ctx) {
         let history = [];
         let historyIndex = -1;
@@ -136,17 +151,19 @@ NX.registerApp({
                         <option value="Courier New, monospace">Courier New</option>
                     </select>
                     <select class="input" id="wart-size" style="width:70px;height:28px;padding:0 8px;font-size:12px;">
-                        <option value="12">12px</option>
-                        <option value="14" selected>14px</option>
-                        <option value="16">16px</option>
-                        <option value="18">18px</option>
-                        <option value="24">24px</option>
+                        <option value="2">12px</option>
+                        <option value="3" selected>14px</option>
+                        <option value="4">16px</option>
+                        <option value="5">18px</option>
+                        <option value="6">24px</option>
                     </select>
                     <div class="sep"></div>
                     <button class="wart-btn" data-cmd="bold"><b>Ж</b></button>
                     <button class="wart-btn" data-cmd="italic"><i>К</i></button>
                     <button class="wart-btn" data-cmd="underline"><u>Ч</u></button>
+                    <button class="wart-btn" data-cmd="strikeThrough"><s>З</s></button>
                     <div class="sep"></div>
+                    <button class="wart-btn" data-cmd="insertUnorderedList">• Список</button>
                     <button class="wart-btn" data-cmd="justifyLeft">≡</button>
                     <button class="wart-btn" data-cmd="justifyCenter">≡</button>
                     <button class="wart-btn" data-cmd="justifyRight">≡</button>
@@ -181,7 +198,6 @@ NX.registerApp({
         const countEl = NX.$('.w-count', body);
         const nameEl = NX.$('.w-filename', body);
 
-        // Функция обновления счетчика
         const updateStats = () => {
             const text = editor.innerText;
             const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
@@ -189,7 +205,6 @@ NX.registerApp({
             countEl.textContent = `${words} слов · ${chars} символов`;
         };
 
-        // История для Undo/Redo
         const saveHistory = () => {
             if (historyIndex < history.length - 1) {
                 history = history.slice(0, historyIndex + 1);
@@ -201,12 +216,10 @@ NX.registerApp({
 
         editor.addEventListener('input', () => {
             updateStats();
-            // Дебаунс для истории
             clearTimeout(editor._histTimer);
             editor._histTimer = setTimeout(saveHistory, 500);
         });
 
-        // Кнопки форматирования
         NX.$$('.wart-btn[data-cmd]', body).forEach(btn => {
             btn.onclick = () => {
                 const cmd = btn.dataset.cmd;
@@ -232,15 +245,13 @@ NX.registerApp({
             };
         });
 
-        // Изменение шрифта
         NX.$('#wart-font', body).onchange = (e) => {
             document.execCommand('fontName', false, e.target.value);
             editor.focus();
             saveHistory();
         };
         NX.$('#wart-size', body).onchange = (e) => {
-            document.execCommand('fontSize', false, '7'); // Костыль, но браузеры не дают просто px
-            // В идеале надо заменять span'ы, но для прототипа хватит
+            document.execCommand('fontSize', false, e.target.value);
             editor.focus();
             saveHistory();
         };
@@ -254,13 +265,7 @@ NX.registerApp({
 
         NX.$('#find-next', body).onclick = () => {
             const text = NX.$('#find-text', body).value;
-            if (!text) return;
-            const sel = window.getSelection();
-            if (sel.rangeCount && sel.toString() === text) {
-                // Уже выделено, ищем дальше
-            }
-            const found = window.find(text);
-            if (!found) NX.notifications.push('Поиск', 'Не найдено', 'info');
+            if (text) window.find(text);
         };
 
         NX.$('#find-replace', body).onclick = () => {
@@ -268,7 +273,6 @@ NX.registerApp({
             const replace = NX.$('#replace-text', body).value;
             if (!find) return;
             
-            // Простая замена по всему тексту (осторожно с HTML, но для простого текста сойдет)
             const html = editor.innerHTML;
             const newHtml = html.split(find).join(replace);
             if (html !== newHtml) {
@@ -278,7 +282,7 @@ NX.registerApp({
             }
         };
 
-        // Вставка изображения (Base64)
+        // Вставка изображения
         NX.$('#wart-img', body).onclick = () => {
             const input = document.createElement('input');
             input.type = 'file';
@@ -325,7 +329,7 @@ NX.registerApp({
             }
         };
 
-        // Экспорт в PDF (через window.print)
+        // Экспорт в PDF
         NX.$('#wart-pdf', body).onclick = () => {
             const printWindow = window.open('', '', 'width=800,height=600');
             printWindow.document.write(`<html><head><title>${filename}</title><style>body{font-family:Georgia,serif;padding:40px;line-height:1.6;}</style></head><body>${editor.innerHTML}</body></html>`);
@@ -333,7 +337,6 @@ NX.registerApp({
             setTimeout(() => printWindow.print(), 500);
         };
 
-        // Инициализация
         if (ctx.args && ctx.args.content) {
             editor.innerHTML = ctx.args.content;
             if (ctx.args.name) {
@@ -352,7 +355,7 @@ NX.registerApp({
     id: 'point',
     name: 'Point',
     icon: NX.icons.point,
-    w: 800, h: 600,
+    w: 850, h: 650,
     render(body, ctx) {
         body.innerHTML = `
             <div class="point-app">
@@ -402,12 +405,10 @@ NX.registerApp({
         let undoStack = [];
         let redoStack = [];
 
-        // Ресайз канваса под контейнер
         const resizeCanvas = () => {
             const rect = wrap.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
             
-            // Сохраняем текущее содержимое
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
@@ -422,7 +423,6 @@ NX.registerApp({
             ctxCanvas.lineCap = 'round';
             ctxCanvas.lineJoin = 'round';
 
-            // Восстанавливаем содержимое
             if (tempCanvas.width > 0) {
                 ctxCanvas.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, rect.width, rect.height);
             } else {
@@ -431,21 +431,18 @@ NX.registerApp({
             }
         };
 
-        // Сохранение состояния для Undo
         const saveState = () => {
             undoStack.push(canvas.toDataURL());
             if (undoStack.length > 20) undoStack.shift();
             redoStack = [];
         };
 
-        // Инициализация
         setTimeout(() => {
             resizeCanvas();
             saveState();
         }, 100);
 
         window.addEventListener('resize', () => {
-            // При ресайзе окна просто обновляем размеры (сбрасываем историю для простоты)
             const imgData = canvas.toDataURL();
             resizeCanvas();
             const img = new Image();
@@ -453,16 +450,12 @@ NX.registerApp({
             img.src = imgData;
         });
 
-        // Обработчики выбора инструментов
         NX.$('#pt-tool', body).onchange = (e) => {
             tool = e.target.value;
-            if (tool === 'fill') canvas.style.cursor = 'url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjIiPjxwYXRoIGQ9Ik0xMiAyTDQgMTBsOCA4IDgtOC04LTh6Ii8+PC9zdmc+) 12 12, crosshair';
-            else canvas.style.cursor = 'crosshair';
+            canvas.style.cursor = tool === 'fill' ? 'cell' : 'crosshair';
         };
 
-        NX.$('#pt-size', body).oninput = (e) => {
-            size = parseInt(e.target.value);
-        };
+        NX.$('#pt-size', body).oninput = (e) => { size = parseInt(e.target.value); };
 
         NX.$$('.color-swatch', body).forEach(sw => {
             sw.onclick = () => {
@@ -472,7 +465,6 @@ NX.registerApp({
             };
         });
 
-        // Undo/Redo
         NX.$('#pt-undo', body).onclick = () => {
             if (undoStack.length > 1) {
                 redoStack.push(undoStack.pop());
@@ -505,7 +497,6 @@ NX.registerApp({
             ctxCanvas.fillRect(0, 0, canvas.width, canvas.height);
         };
 
-        // Отрисовка
         const getPos = (e) => {
             const rect = canvas.getBoundingClientRect();
             return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -518,10 +509,9 @@ NX.registerApp({
             startX = pos.x;
             startY = pos.y;
             
-            saveState(); // Сохраняем перед началом рисования
+            saveState();
 
             if (tool === 'fill') {
-                // Простая заливка (в реальности сложнее, но для прототипа зальем весь холст)
                 ctxCanvas.fillStyle = color;
                 ctxCanvas.fillRect(0, 0, canvas.width, canvas.height);
                 drawing = false;
@@ -533,10 +523,9 @@ NX.registerApp({
                 ctxCanvas.moveTo(pos.x, pos.y);
                 ctxCanvas.strokeStyle = tool === 'eraser' ? '#ffffff' : color;
                 ctxCanvas.lineWidth = tool === 'eraser' ? size * 3 : size;
-                ctxCanvas.lineTo(pos.x + 0.01, pos.y + 0.01); // Точка
+                ctxCanvas.lineTo(pos.x + 0.01, pos.y + 0.01);
                 ctxCanvas.stroke();
             } else {
-                // Сохраняем снимок для фигур
                 snapshot = ctxCanvas.getImageData(0, 0, canvas.width, canvas.height);
             }
         });
@@ -551,7 +540,6 @@ NX.registerApp({
                 ctxCanvas.lineTo(pos.x, pos.y);
                 ctxCanvas.stroke();
             } else {
-                // Фигуры
                 ctxCanvas.putImageData(snapshot, 0, 0);
                 ctxCanvas.beginPath();
                 ctxCanvas.strokeStyle = color;
@@ -573,14 +561,10 @@ NX.registerApp({
             }
         });
 
-        const stopDrawing = () => {
-            drawing = false;
-            snapshot = null;
-        };
+        const stopDrawing = () => { drawing = false; snapshot = null; };
         canvas.addEventListener('pointerup', stopDrawing);
         canvas.addEventListener('pointercancel', stopDrawing);
 
-        // Сохранение в ФС
         NX.$('#pt-save', body).onclick = () => {
             const name = prompt('Имя файла:', 'Рисунок.png');
             if (!name) return;
@@ -595,7 +579,7 @@ NX.registerApp({
     id: 'powerpaint',
     name: 'Power Paint',
     icon: NX.icons.powerpaint,
-    w: 900, h: 620,
+    w: 950, h: 650,
     render(body, ctx) {
         let slides = [{ title: 'Новая презентация', text: '', notes: '' }];
         let currentSlide = 0;
@@ -633,7 +617,6 @@ NX.registerApp({
                             <textarea class="pp-text-input" id="pp-text" placeholder="Текст слайда..." style="color:${themes[currentTheme].text};">${slides[0].text}</textarea>
                         </div>
                     </div>
-                    <!-- Заметки докладчика -->
                     <div id="pp-notes-area" style="display:none; padding:10px 20px; background:var(--surface-2); border-top:1px solid var(--border);">
                         <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text-muted);">ЗАМЕТКИ ДОКЛАДЧИКА</div>
                         <textarea id="pp-notes-input" style="width:100%;height:60px;border:1px solid var(--border);border-radius:4px;padding:8px;resize:none;font-size:13px;" placeholder="Введите заметки..."></textarea>
@@ -689,7 +672,6 @@ NX.registerApp({
             textEl.style.color = t.text;
         };
 
-        // Обработчики ввода
         titleEl.oninput = () => { saveCurrentSlide(); renderList(); };
         textEl.oninput = () => { saveCurrentSlide(); };
 
@@ -717,7 +699,6 @@ NX.registerApp({
             NX.notifications.push('Power Paint', `Презентация ${name} сохранена`, 'save');
         };
 
-        // Показ слайдов (Fullscreen)
         NX.$('#pp-present', body).onclick = () => {
             saveCurrentSlide();
             presenting = true;
@@ -750,7 +731,6 @@ NX.registerApp({
             renderSlide();
             document.body.appendChild(overlay);
 
-            // Управление с клавиатуры
             const keyHandler = (e) => {
                 if (!presenting) return;
                 if (e.key === 'ArrowRight' && pIdx < slides.length - 1) { pIdx++; renderSlide(); }
@@ -761,7 +741,6 @@ NX.registerApp({
             ctx.onClose(() => document.removeEventListener('keydown', keyHandler));
         };
 
-        // Инициализация
         if (ctx.args && ctx.args.content) {
             try {
                 slides = JSON.parse(ctx.args.content);
