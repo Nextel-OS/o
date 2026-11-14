@@ -103,16 +103,32 @@ input, textarea { font: inherit; color: inherit; outline: none; user-select: tex
     background-size: cover;
     backdrop-filter: blur(20px);
     transition: opacity 0.4s ease;
+    color: #ffffff; /* ИСПРАВЛЕНО: всегда белый текст */
 }
 
 #lock-screen.active { display: flex; opacity: 1; }
 #lock-screen.unlocking { opacity: 0; pointer-events: none; }
 
+/* ИСПРАВЛЕНО: принудительно белый цвет для всех текстов на лок-скрине */
+#lock-screen .lock-time,
+#lock-screen .lock-date,
+#lock-screen .lock-name,
+#lock-screen .lock-hint {
+    color: #ffffff !important;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+
+#lock-screen .lock-input-wrap input {
+    color: #ffffff;
+    border-color: rgba(255,255,255,0.4);
+    background: rgba(255,255,255,0.15);
+}
+
 #power-off-screen, #reboot-screen {
     position: fixed;
     inset: 0;
     z-index: 99999;
-    display: none; /* Скрыты по умолчанию! */
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -143,9 +159,33 @@ input, textarea { font: inherit; color: inherit; outline: none; user-select: tex
 #lock-btn { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; }
 .lock-hint { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 8px; }
 .lock-bottom { position: absolute; bottom: 40px; display: flex; gap: 20px; }
-.lock-power-btn { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); color: #fff; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.2); transition: background 0.2s; }
+
+/* ИСПРАВЛЕНО: фиксированные размеры кнопок и SVG, чтобы не были «пиксельными» в тёмной теме */
+.lock-power-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255,255,255,0.2);
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
 .lock-power-btn:hover { background: rgba(255,255,255,0.3); }
-.lock-power-btn svg { width: 20px; height: 20px; }
+
+.lock-power-btn svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: block;
+}
 
 .power-spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.2); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
 .power-text { margin-top: 20px; font-size: 16px; font-weight: 300; color: rgba(255,255,255,0.8); }
@@ -798,3 +838,94 @@ canvas.game-canvas { background: var(--surface); border-radius: var(--radius); b
 .puz-tile { width: 100px; height: 100px; background: var(--surface); border-radius: 6px; font-size: 32px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s, background 0.15s; box-shadow: var(--shadow-sm); }
 .puz-tile:hover { background: var(--surface-2); }
 .puz-empty { background: transparent; box-shadow: none; cursor: default; }
+
+/* ============================================================
+   НОВЫЕ СТИЛИ ДЛЯ АССИСТЕНТА АЛЕВТИНЫ
+   ============================================================ */
+
+#alevtina-chat {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 16px;
+    background: var(--surface);
+}
+
+#alevtina-chat .chat-log {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    margin-bottom: 12px;
+    background: var(--surface-2);
+}
+
+#alevtina-chat .chat-msg {
+    margin: 6px 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+#alevtina-chat .chat-msg.user {
+    justify-content: flex-end;
+}
+
+#alevtina-chat .chat-msg .bubble {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+#alevtina-chat .chat-msg.user .bubble {
+    background: var(--accent);
+    color: #fff;
+    border-bottom-right-radius: 2px;
+}
+
+#alevtina-chat .chat-msg.assistant .bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-bottom-left-radius: 2px;
+}
+
+#alevtina-chat .chat-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+#alevtina-chat .chat-input-row input {
+    flex: 1;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+}
+
+#alevtina-chat .chat-input-row button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+#alevtina-chat .chat-status {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    text-align: center;
+}
