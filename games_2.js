@@ -16,7 +16,9 @@ NX.registerApp({
                     <div>Линии: <span id="tet-lines">0</span></div>
                     <button class="btn primary" id="tet-reset" style="margin-left:auto;height:28px;font-size:12px;">Заново</button>
                 </div>
-                <canvas id="tet-canvas" class="game-canvas" width="240" height="480" style="background:#1e293b;"></canvas>
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;margin-top:10px;">
+                    <canvas id="tet-canvas" class="game-canvas" width="240" height="480" style="background:#1e293b;"></canvas>
+                </div>
                 <div style="margin-top:16px;font-size:12px;color:var(--text-muted);text-align:center;">
                     ← → двигать | ↑ поворот | ↓ ускорить | Пробел - сброс
                 </div>
@@ -121,7 +123,7 @@ NX.registerApp({
                     board.splice(r, 1);
                     board.unshift(Array(COLS).fill(0));
                     cleared++;
-                    r++; // Проверяем ту же строку снова (так как она сдвинулась)
+                    r++; // Проверяем ту же строку
                 }
             }
             
@@ -148,18 +150,17 @@ NX.registerApp({
         };
 
         const rotate = () => {
-            // Транспонирование и реверс
             const shape = currentPiece.shape;
             const rotated = shape[0].map((_, i) => shape.map(row => row[i]).reverse());
             
             if (!collide(currentX, currentY, rotated)) {
                 currentPiece.shape = rotated;
+                NX.audio.playTone(600, 0.05, 'sine', 0.05);
                 draw();
             }
         };
 
         const draw = () => {
-            // Фон
             ctxCanvas.fillStyle = '#1e293b';
             ctxCanvas.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -225,7 +226,6 @@ NX.registerApp({
             } else if (k === 'ArrowUp') {
                 rotate(); e.preventDefault();
             } else if (k === ' ') {
-                // Мгновенное падение
                 while (!collide(currentX, currentY + 1, currentPiece.shape)) {
                     currentY++;
                 }
@@ -259,7 +259,9 @@ NX.registerApp({
                     <button class="btn" id="pong-reset" style="height:28px;font-size:12px;">Заново</button>
                     <div>ИИ: <span id="pong-p2" style="color:#ef4444;">0</span></div>
                 </div>
-                <canvas id="pong-canvas" class="game-canvas" width="600" height="350" style="background:#000;margin-top:10px;"></canvas>
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;margin-top:10px;">
+                    <canvas id="pong-canvas" class="game-canvas" width="600" height="350" style="background:#000;"></canvas>
+                </div>
                 <div style="margin-top:16px;font-size:12px;color:var(--text-muted);">Управление: Мышь</div>
             </div>
         `;
@@ -284,31 +286,26 @@ NX.registerApp({
         };
 
         const update = () => {
-            // Движение мяча
             ball.x += ball.vx;
             ball.y += ball.vy;
 
-            // Отскок от верха/низа
             if (ball.y - ball.r < 0 || ball.y + ball.r > canvas.height) {
                 ball.vy *= -1;
-                NX.audio.playTone(400, 0.05);
+                NX.audio.playTone(400, 0.05, 'sine', 0.1);
             }
 
-            // Левая ракетка (игрок)
             if (ball.x - ball.r < 20 && ball.y > p1.y && ball.y < p1.y + p1.h) {
                 ball.vx = Math.abs(ball.vx) * 1.05;
                 ball.vy += (Math.random() - 0.5) * 2;
-                NX.audio.playTone(600, 0.05);
+                NX.audio.playTone(600, 0.05, 'sine', 0.1);
             }
 
-            // Правая ракетка (ИИ)
             if (ball.x + ball.r > canvas.width - 20 && ball.y > p2.y && ball.y < p2.y + p2.h) {
                 ball.vx = -Math.abs(ball.vx) * 1.05;
                 ball.vy += (Math.random() - 0.5) * 2;
-                NX.audio.playTone(600, 0.05);
+                NX.audio.playTone(600, 0.05, 'sine', 0.1);
             }
 
-            // Голы
             if (ball.x < 0) {
                 p2Score++;
                 NX.$('#pong-p2', body).textContent = p2Score;
@@ -321,7 +318,6 @@ NX.registerApp({
                 resetBall();
             }
 
-            // ИИ (плавно следует за мячом)
             const p2Center = p2.y + p2.h / 2;
             if (p2Center < ball.y - 10) p2.y += 4;
             else if (p2Center > ball.y + 10) p2.y -= 4;
@@ -342,7 +338,6 @@ NX.registerApp({
             c.fillStyle = '#000';
             c.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Центральная линия
             c.strokeStyle = 'rgba(255,255,255,0.2)';
             c.setLineDash([10, 10]);
             c.beginPath();
@@ -351,21 +346,18 @@ NX.registerApp({
             c.stroke();
             c.setLineDash([]);
 
-            // Ракетки
             c.fillStyle = '#3b82f6';
             c.fillRect(10, p1.y, p1.w, p1.h);
             
             c.fillStyle = '#ef4444';
             c.fillRect(canvas.width - 20, p2.y, p2.w, p2.h);
 
-            // Мяч
             c.fillStyle = '#fff';
             c.beginPath();
             c.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
             c.fill();
         };
 
-        // Управление мышью
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             const mouseY = e.clientY - rect.top;
@@ -394,7 +386,9 @@ NX.registerApp({
                     <button class="btn" id="brk-reset" style="height:28px;font-size:12px;">Заново</button>
                     <div>Жизни: <span id="brk-lives" style="color:#ef4444;">3</span></div>
                 </div>
-                <canvas id="brk-canvas" class="game-canvas" width="600" height="400" style="background:#0f172a;margin-top:10px;"></canvas>
+                <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;margin-top:10px;">
+                    <canvas id="brk-canvas" class="game-canvas" width="600" height="400" style="background:#0f172a;"></canvas>
+                </div>
                 <div style="margin-top:16px;font-size:12px;color:var(--text-muted);">Управление: Мышь</div>
             </div>
         `;
@@ -442,25 +436,26 @@ NX.registerApp({
         };
 
         const update = () => {
-            // Движение мяча
             ball.x += ball.vx;
             ball.y += ball.vy;
 
-            // Стены
-            if (ball.x - ball.r < 0 || ball.x + ball.r > canvas.width) ball.vx *= -1;
-            if (ball.y - ball.r < 0) ball.vy *= -1;
+            if (ball.x - ball.r < 0 || ball.x + ball.r > canvas.width) {
+                ball.vx *= -1;
+                NX.audio.playTone(300, 0.05, 'sine', 0.1);
+            }
+            if (ball.y - ball.r < 0) {
+                ball.vy *= -1;
+                NX.audio.playTone(300, 0.05, 'sine', 0.1);
+            }
 
-            // Платформа
             if (ball.y + ball.r > paddle.y && ball.y - ball.r < paddle.y + paddle.h &&
                 ball.x > paddle.x && ball.x < paddle.x + paddle.w) {
                 ball.vy = -Math.abs(ball.vy);
-                // Добавляем угол отскока
-                const hitPos = (ball.x - paddle.x) / paddle.w; // 0..1
+                const hitPos = (ball.x - paddle.x) / paddle.w;
                 ball.vx = (hitPos - 0.5) * 8;
-                NX.audio.playTone(500, 0.05);
+                NX.audio.playTone(500, 0.05, 'sine', 0.1);
             }
 
-            // Низ (проигрыш)
             if (ball.y + ball.r > canvas.height) {
                 lives--;
                 NX.$('#brk-lives', body).textContent = lives;
@@ -477,7 +472,6 @@ NX.registerApp({
                 ball.vy = -4;
             }
 
-            // Кирпичи
             bricks.forEach(b => {
                 if (!b.active) return;
                 if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w &&
@@ -486,11 +480,10 @@ NX.registerApp({
                     ball.vy *= -1;
                     score += 10;
                     NX.$('#brk-score', body).textContent = score;
-                    NX.audio.playTone(600 + Math.random() * 200, 0.05);
+                    NX.audio.playTone(600 + Math.random() * 200, 0.05, 'sine', 0.1);
                 }
             });
 
-            // Победа
             if (bricks.every(b => !b.active)) {
                 NX.notifications.push('Арканоид', 'Вы победили!', 'check');
                 return init();
@@ -504,17 +497,14 @@ NX.registerApp({
             c.fillStyle = '#0f172a';
             c.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Платформа
             c.fillStyle = '#3b82f6';
             c.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
 
-            // Мяч
             c.fillStyle = '#fff';
             c.beginPath();
             c.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
             c.fill();
 
-            // Кирпичи
             bricks.forEach(b => {
                 if (b.active) {
                     c.fillStyle = b.color;
@@ -589,6 +579,7 @@ NX.registerApp({
                     box.style.background = '#10b981';
                     box.textContent = 'ЖМИТЕ!';
                     box.style.cursor = 'pointer';
+                    NX.audio.playTone(800, 0.1, 'sine', 0.1);
                     startTime = performance.now();
                 }, 1500 + Math.random() * 3000);
             } 
