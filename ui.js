@@ -250,17 +250,20 @@ NX.renderDesktop = function() {
     
     // Делаем копию, чтобы не мутировать оригинал при сортировке
     const apps = [...NX.state.installed].map(id => NX.apps[id]).filter(Boolean);
-    apps.sort((a, b) => a.name.localeCompare(b.name));
+    // Сортируем в том порядке, в котором они лежат в state.installed
+    apps.sort((a, b) => NX.state.installed.indexOf(a.id) - NX.state.installed.indexOf(b.id));
     
     apps.forEach(app => {
         const el = document.createElement('div');
         el.className = 'desktop-icon';
         el.dataset.id = app.id;
+        el.draggable = true;
         el.innerHTML = `
             <span style="color:var(--accent)">${app.icon}</span>
             <span class="label">${NX.esc(app.name)}</span>
         `;
         
+        // Выделение
         el.addEventListener('mousedown', (e) => {
             e.stopPropagation();
             if (!e.ctrlKey) {
@@ -269,10 +272,53 @@ NX.renderDesktop = function() {
             el.classList.add('selected');
         });
         
+        // Открытие
         el.addEventListener('dblclick', () => {
             NX.openApp(app.id);
         });
         
+        // ===== DRAG-AND-DROP: перетаскивание иконок =====
+        el.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', app.id);
+            e.dataTransfer.effectAllowed = 'move';
+            el.style.opacity = '0.4';
+            el.classList.add('dragging');
+        });
+        
+        el.addEventListener('dragend', () => {
+            el.style.opacity = '1';
+            el.classList.remove('dragging');
+        });
+        
+        el.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            el.classList.add('drag-over');
+        });
+        
+        el.addEventListener('dragleave', () => {
+            el.classList.remove('drag-over');
+        });
+        
+        el.addEventListener('drop', (e) => {
+            e.preventDefault();
+            el.classList.remove('drag-over');
+            const draggedId = e.dataTransfer.getData('text/plain');
+            if (!draggedId || draggedId === app.id) return;
+            
+            // Меняем порядок в массиве installed
+            const installed = NX.state.installed;
+            const fromIdx = installed.indexOf(draggedId);
+            const toIdx = installed.indexOf(app.id);
+            if (fromIdx !== -1 && toIdx !== -1) {
+                installed.splice(fromIdx, 1);
+                installed.splice(toIdx, 0, draggedId);
+                NX.saveState();
+                NX.renderDesktop();
+            }
+        });
+        
+        // ===== КОНТЕКСТНОЕ МЕНЮ (правильное удаление) =====
         el.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -283,12 +329,7 @@ NX.renderDesktop = function() {
             NX.showContextMenu(e.clientX, e.clientY, [
                 { label: 'Открыть', icon: NX.icons.play, action: () => NX.openApp(app.id) },
                 { sep: true },
-                { label: 'Удалить с рабочего стола', icon: NX.icons.trash, action: () => {
-                    NX.state.installed = NX.state.installed.filter(id => id !== app.id);
-                    NX.saveState();
-                    NX.renderDesktop();
-                    NX.notifications.push('Рабочий стол', `${app.name} удалено`, 'info');
-                }}
+                { label: 'Удалить приложение', icon: NX.icons.trash, action: () => NX.uninstallApp(app.id) }
             ]);
         });
         
@@ -300,6 +341,7 @@ NX.renderDesktop = function() {
 NX.initMarquee = function() {
     const desktop = NX.$('#desktop');
     const marquee = NX.$('#selection-marquee');
+    if (!desktop || !marquee) return;
     let isSelecting = false;
     let startX, startY;
 
@@ -426,7 +468,9 @@ NX.renderWidgets = function() {
                     if(el.querySelector('.w-temp')) {
                         el.querySelector('.w-temp').textContent = (d.current.temperature_2m > 0 ? '+' : '') + Math.round(d.current.temperature_2m) + '°';
                     }
-                }).catch(() => {});
+                }).catch(() => {
+                    if(el.querySelector('.w-temp')) el.querySelector('.w-temp').textContent = '—';
+                });
         }
 
         if (w.type === 'clock') {
@@ -441,10 +485,9 @@ NX.renderWidgets = function() {
             setInterval(updateTime, 10000);
         }
 
-        // Перетаскивание
+        // Перетаскивание виджета
         let startX, startY, startTop, startRight;
         el.addEventListener('pointerdown', (e) => {
-            // Не тянем, если кликнули по кнопке или ссылке внутри виджета
             if (e.target.closest('button') || e.target.closest('a')) return;
 
             el.setPointerCapture(e.pointerId);
