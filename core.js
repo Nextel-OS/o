@@ -63,7 +63,6 @@ NX.icons = {
     g2048: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8.2 8.6h1.6v6M13.4 8.6h2.1a1.9 1.9 0 0 1 0 3.8h-2.1v2.2h2.4"/></svg>`,
     mines: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/></svg>`,
     ttt: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9.5 3.5v17M14.5 3.5v17M3.5 9.5h17M3.5 14.5h17"/><path d="M5 5l3.5 3.5M8.5 5L5 8.5" stroke-width="1.8"/><circle cx="17.5" cy="17.5" r="2"/></svg>`,
-    memory: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="7.5" height="12" rx="2"/><rect x="13.5" y="6" width="7.5" height="12" rx="2"/><path d="M5.8 12h1.9M16.3 12h1.9"/></svg>`,
     pong: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="2.6" height="10" rx="1.2"/><rect x="18.4" y="5" width="2.6" height="10" rx="1.2"/><circle cx="12" cy="13" r="1.7"/></svg>`,
     reaction: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13.5 3 6 13.2h5.2L9.8 21l7.7-10.4h-5.2L13.5 3Z"/></svg>`,
     guess: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6"/><circle cx="12" cy="16.6" r=".8" fill="currentColor"/></svg>`,
@@ -77,7 +76,7 @@ NX.icons = {
 const DEFAULT_STATE = {
     theme: 'light',
     wallpaper: 0,
-    installed: ['calc', 'weather', 'wart', 'files', 'terminal', 'browser', 'settings', 'antivirus', 'trash', 'market', 'notes', 'todo', 'point', 'powerpaint', 'music', 'clock', 'calendar'],
+    installed: ['calc', 'weather', 'wart', 'files', 'terminal', 'browser', 'settings', 'antivirus', 'trash', 'market', 'notes', 'todo', 'point', 'powerpaint', 'music', 'clock', 'calendar', 'snake', 'g2048'],
     trash: [],
     volume: 80,
     brightness: 100,
@@ -88,13 +87,23 @@ const DEFAULT_STATE = {
         { id: 'w_clock', type: 'clock', top: 20, right: 20 },
         { id: 'w_weather', type: 'weather', top: 150, right: 20 }
     ],
-    session: []
+    session: [],
+    tasks: [
+        { id: 1, text: 'Изучить Nextel OS', done: false }
+    ],
+    notes: [
+        { id: 1, title: 'Добро пожаловать', content: 'Это заметка в Nextel OS.', date: new Date().toISOString() }
+    ]
 };
 
 NX.state = {};
 
 NX.saveState = () => {
-    localStorage.setItem('nx_state_v2', JSON.stringify(NX.state));
+    try {
+        localStorage.setItem('nx_state_v2', JSON.stringify(NX.state));
+    } catch (e) {
+        console.warn('Не удалось сохранить состояние:', e);
+    }
 };
 
 NX.loadState = () => {
@@ -165,40 +174,59 @@ NX.fs = {
     }
 };
 
-// --- ЗВУКОВОЙ ДВИЖОК ---
+// --- ЗВУКОВОЙ ДВИЖОК (С ИСПРАВЛЕНИЕМ ОШИБКИ AUDIO CONTEXT) ---
 NX.audio = {
     ctx: null,
+    unlocked: false,
     
     init() {
         if (!this.ctx) {
-            try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+            try { 
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
+            } catch(e) {
+                console.warn('AudioContext не поддерживается');
+            }
         }
-        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    },
+
+    // Разблокировка по первому клику
+    unlock() {
+        if (this.unlocked) return;
+        this.init();
+        this.unlocked = true;
+        console.log('AudioContext разблокирован пользователем');
     },
     
     playTone(freq, dur, type = 'sine', vol = 0.05) {
+        if (!this.unlocked) return; // Не играем, пока не было клика
         this.init();
         if (!this.ctx) return;
         
-        // Учитываем громкость системы
         const sysVol = NX.state.volume / 100;
         if (sysVol === 0) return;
 
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-        
-        gain.gain.setValueAtTime(0, this.ctx.currentTime);
-        gain.gain.linearRampToValueAtTime(vol * sysVol, this.ctx.currentTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + dur);
-        
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-        
-        osc.start();
-        osc.stop(this.ctx.currentTime + dur);
+        try {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+            
+            gain.gain.setValueAtTime(0, this.ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(vol * sysVol, this.ctx.currentTime + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + dur);
+            
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            
+            osc.start();
+            osc.stop(this.ctx.currentTime + dur);
+        } catch (e) {
+            // Игнорируем ошибки звука
+        }
     },
     
     click() { this.playTone(800, 0.05, 'sine', 0.1); },
@@ -217,6 +245,10 @@ NX.audio = {
         });
     }
 };
+
+// Слушатели для разблокировки звука при первом взаимодействии
+document.addEventListener('click', () => NX.audio.unlock(), { once: true });
+document.addEventListener('keydown', () => NX.audio.unlock(), { once: true });
 
 // --- УВЕДОМЛЕНИЯ ---
 NX.notifications = {
@@ -237,7 +269,6 @@ NX.notifications = {
         this.renderToast(notif);
         NX.audio.notify();
         
-        // Если открыт центр уведомлений, обновляем его
         if (NX.$('#notification-center').classList.contains('open')) {
             this.renderCenter();
         }
@@ -245,6 +276,8 @@ NX.notifications = {
     
     renderToast(notif) {
         const container = NX.$('#toast-container');
+        if (!container) return;
+        
         const el = document.createElement('div');
         el.className = 'toast';
         el.innerHTML = `
@@ -273,6 +306,8 @@ NX.notifications = {
     
     renderCenter() {
         const center = NX.$('#notification-center');
+        if (!center) return;
+
         let html = `
             <div class="np-header">
                 <span>Уведомления</span>
@@ -303,10 +338,13 @@ NX.notifications = {
         html += `</div>`;
         center.innerHTML = html;
         
-        center.querySelector('#clear-notifs').onclick = () => {
-            this.items = [];
-            this.renderCenter();
-        };
+        const clearBtn = center.querySelector('#clear-notifs');
+        if (clearBtn) {
+            clearBtn.onclick = () => {
+                this.items = [];
+                this.renderCenter();
+            };
+        }
     }
 };
 
@@ -328,7 +366,6 @@ NX.clipboard = {
     
     add(text) {
         if (!text.trim()) return;
-        // Удаляем дубликаты
         this.items = this.items.filter(t => t !== text);
         this.items.unshift(text);
         if (this.items.length > 20) this.items.pop();
@@ -343,6 +380,8 @@ NX.clipboard = {
     
     renderPanel() {
         const panel = NX.$('#clipboard-panel');
+        if (!panel) return;
+
         let html = `
             <div class="cb-header">
                 <span>Буфер обмена</span>
