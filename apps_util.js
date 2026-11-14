@@ -2,11 +2,12 @@
    NEXTEL OS 2.0 — СИСТЕМНЫЕ УТИЛИТЫ И ДАННЫЕ
    ============================================================ */
 
-// --- 1. ТЕРМИНАЛ (20+ команд) ---
+// --- 1. ТЕРМИНАЛ ---
 NX.registerApp({
     id: 'terminal',
     name: 'Терминал',
     icon: NX.icons.terminal,
+    color: '#4a5568',
     w: 750, h: 500,
     render(body, ctx) {
         let history = [];
@@ -44,7 +45,6 @@ NX.registerApp({
             output.scrollTop = output.scrollHeight;
         };
 
-        // Определение команд
         const commands = {
             'help': () => {
                 print('<span class="term-info">Доступные команды:</span>');
@@ -64,7 +64,7 @@ NX.registerApp({
                 print('  neofetch      - Информация о системе');
                 print('  sysinfo       - Подробная информация о системе');
                 print('  uname         - Ядро системы');
-                print('  open [app]    - Запустить приложение (например, calc)');
+                print('  open [app]    - Запустить приложение (например, open calc)');
                 print('  apps          - Список доступных приложений');
                 print('  theme [dark/light] - Сменить тему');
                 print('  history       - История команд');
@@ -72,46 +72,26 @@ NX.registerApp({
                 print('  shutdown      - Выключение');
                 print('  exit          - Закрыть терминал');
             },
-            'clear': () => {
-                output.innerHTML = '';
-            },
+            'clear': () => { output.innerHTML = ''; },
             'ls': () => {
                 const node = NX.fs.getNode(currentPath);
                 if (!node || !node.children) return print('Ошибка чтения директории', 'term-error');
                 if (node.children.length === 0) return print('(пусто)');
-                
                 node.children.forEach(c => {
-                    if (c.type === 'folder') {
-                        print(`<span class="term-info">${c.name}/</span>`);
-                    } else {
-                        print(`  ${c.name}`);
-                    }
+                    if (c.type === 'folder') print(`<span class="term-info">${c.name}/</span>`);
+                    else print(`  ${c.name}`);
                 });
             },
-            'pwd': () => {
-                print('/' + currentPath.join('/'));
-            },
+            'pwd': () => { print('/' + currentPath.join('/')); },
             'cd': (args) => {
-                if (!args[0] || args[0] === '~') {
-                    currentPath = [];
-                    updatePrompt();
-                    return;
-                }
-                if (args[0] === '..') {
-                    currentPath.pop();
-                    updatePrompt();
-                    return;
-                }
+                if (!args[0] || args[0] === '~') { currentPath = []; updatePrompt(); return; }
+                if (args[0] === '..') { currentPath.pop(); updatePrompt(); return; }
                 const target = args[0];
                 const node = NX.fs.getNode(currentPath);
                 if (node && node.children) {
                     const folder = node.children.find(c => c.name === target && c.type === 'folder');
-                    if (folder) {
-                        currentPath.push(target);
-                        updatePrompt();
-                    } else {
-                        print(`Папка "${target}" не найдена`, 'term-error');
-                    }
+                    if (folder) { currentPath.push(target); updatePrompt(); }
+                    else print(`Папка "${target}" не найдена`, 'term-error');
                 }
             },
             'cat': (args) => {
@@ -119,11 +99,8 @@ NX.registerApp({
                 const node = NX.fs.getNode(currentPath);
                 if (node && node.children) {
                     const file = node.children.find(c => c.name === args[0] && c.type === 'file');
-                    if (file) {
-                        print(NX.esc(file.content || '(пустой файл)'));
-                    } else {
-                        print(`Файл "${args[0]}" не найден`, 'term-error');
-                    }
+                    if (file) print(NX.esc(file.content || '(пустой файл)'));
+                    else print(`Файл "${args[0]}" не найден`, 'term-error');
                 }
             },
             'mkdir': (args) => {
@@ -151,18 +128,14 @@ NX.registerApp({
                     const idx = node.children.findIndex(c => c.name === args[0]);
                     if (idx !== -1) {
                         const item = node.children.splice(idx, 1)[0];
-                        item.originalPath = currentPath.join('/');
+                        item.originalPath = currentPath.join('/') || 'Документы'; // fallback
                         NX.state.trash.push(item);
                         NX.saveState();
                         print(`Удалено: ${args[0]}`);
-                    } else {
-                        print(`Не найдено: ${args[0]}`, 'term-error');
-                    }
+                    } else print(`Не найдено: ${args[0]}`, 'term-error');
                 }
             },
-            'echo': (args) => {
-                print(NX.esc(args.join(' ')));
-            },
+            'echo': (args) => { print(NX.esc(args.join(' '))); },
             'whoami': () => print('user'),
             'date': () => print(new Date().toLocaleString('ru-RU')),
             'time': () => print(new Date().toLocaleTimeString('ru-RU')),
@@ -194,9 +167,7 @@ NX.registerApp({
                 if (NX.apps[args[0]]) {
                     NX.openApp(args[0]);
                     print(`Запуск ${NX.apps[args[0]].name}...`);
-                } else {
-                    print(`Приложение "${args[0]}" не найдено`, 'term-error');
-                }
+                } else print(`Приложение "${args[0]}" не найдено`, 'term-error');
             },
             'apps': () => {
                 print('<span class="term-info">Доступные приложения:</span>');
@@ -210,22 +181,12 @@ NX.registerApp({
                     document.body.className = args[0] + '-theme';
                     NX.saveState();
                     print(`Тема изменена на ${args[0]}`);
-                } else {
-                    print('Использование: theme dark | light', 'term-error');
-                }
+                } else print('Использование: theme dark | light', 'term-error');
             },
-            'history': () => {
-                history.forEach((cmd, i) => print(`  ${i + 1}  ${NX.esc(cmd)}`));
-            },
-            'reboot': () => {
-                NX.boot.reboot();
-            },
-            'shutdown': () => {
-                NX.boot.shutdown();
-            },
-            'exit': () => {
-                NX.closeWindow(ctx.win);
-            }
+            'history': () => { history.forEach((cmd, i) => print(`  ${i + 1}  ${NX.esc(cmd)}`)); },
+            'reboot': () => NX.boot.reboot(),
+            'shutdown': () => NX.boot.shutdown(),
+            'exit': () => NX.closeWindow(ctx.win)
         };
 
         input.addEventListener('keydown', (e) => {
@@ -246,11 +207,8 @@ NX.registerApp({
                 const cmd = parts[0].toLowerCase();
                 const args = parts.slice(1);
 
-                if (commands[cmd]) {
-                    commands[cmd](args);
-                } else {
-                    print(`Команда не найдена: ${NX.esc(cmd)}. Введите help для списка команд.`, 'term-error');
-                }
+                if (commands[cmd]) commands[cmd](args);
+                else print(`Команда не найдена: ${NX.esc(cmd)}. Введите help для списка команд.`, 'term-error');
 
                 input.value = '';
                 output.scrollTop = output.scrollHeight;
@@ -258,19 +216,11 @@ NX.registerApp({
             
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                if (historyIndex > 0) {
-                    historyIndex--;
-                    input.value = history[historyIndex];
-                }
+                if (historyIndex > 0) { historyIndex--; input.value = history[historyIndex]; }
             } else if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                if (historyIndex < history.length - 1) {
-                    historyIndex++;
-                    input.value = history[historyIndex];
-                } else {
-                    historyIndex = history.length;
-                    input.value = '';
-                }
+                if (historyIndex < history.length - 1) { historyIndex++; input.value = history[historyIndex]; }
+                else { historyIndex = history.length; input.value = ''; }
             }
         });
 
@@ -285,6 +235,7 @@ NX.registerApp({
     id: 'files',
     name: 'Файловый менеджер',
     icon: NX.icons.folder,
+    color: '#f5a623',
     w: 800, h: 550, single: true,
     render(body, ctx) {
         let currentPath = [];
@@ -292,10 +243,7 @@ NX.registerApp({
 
         const render = () => {
             const node = NX.fs.getNode(currentPath);
-            if (!node) {
-                currentPath = [];
-                return render();
-            }
+            if (!node) { currentPath = []; return render(); }
 
             const pathStr = currentPath.length === 0 ? 'Этот компьютер' : 'Этот компьютер / ' + currentPath.join(' / ');
             
@@ -371,11 +319,7 @@ NX.registerApp({
             };
 
             NX.$$('.file-item', body).forEach(el => {
-                el.onclick = () => {
-                    selectedFile = el.dataset.name;
-                    render();
-                };
-                
+                el.onclick = () => { selectedFile = el.dataset.name; render(); };
                 el.ondblclick = () => {
                     const name = el.dataset.name;
                     const type = el.dataset.type;
@@ -396,10 +340,7 @@ NX.registerApp({
 
             NX.$('#fm-new-folder', body).onclick = () => {
                 const name = prompt('Имя новой папки:', 'Новая папка');
-                if (name) {
-                    node.children.push({ name, type: 'folder', children: [] });
-                    render();
-                }
+                if (name) { node.children.push({ name, type: 'folder', children: [] }); render(); }
             };
 
             NX.$('#fm-delete', body).onclick = () => {
@@ -407,7 +348,7 @@ NX.registerApp({
                 const idx = node.children.findIndex(c => c.name === selectedFile);
                 if (idx !== -1) {
                     const item = node.children.splice(idx, 1)[0];
-                    item.originalPath = currentPath.join('/');
+                    item.originalPath = currentPath.join('/') || 'Документы';
                     NX.state.trash.push(item);
                     NX.saveState();
                     NX.notifications.push('Корзина', `Объект перемещен в корзину`, 'trash');
@@ -421,11 +362,12 @@ NX.registerApp({
     }
 });
 
-// --- 3. КОРЗИНА ---
+// --- 3. КОРЗИНА (ИСПРАВЛЕНО) ---
 NX.registerApp({
     id: 'trash',
     name: 'Корзина',
     icon: NX.icons.trash,
+    color: '#8e8e93',
     w: 700, h: 500, single: true,
     render(body) {
         const render = () => {
@@ -436,14 +378,20 @@ NX.registerApp({
                 itemsHtml = items.map((item, index) => {
                     let icon = NX.icons.fileTxt;
                     if (item.type === 'folder') icon = NX.icons.folder;
+                    else if (item.type === 'app') icon = NX.icons.device; // Иконка для приложения
                     else if (item.kind === 'img') icon = NX.icons.fileImg;
                     else if (item.kind === 'ppt') icon = NX.icons.filePpt;
+
+                    // Определяем, приложение это или файл
+                    const isApp = item.type === 'app';
 
                     return `
                         <div class="file-item" data-index="${index}">
                             <span style="color:var(--text-muted)">${icon}</span>
                             <span>${NX.esc(item.name)}</span>
-                            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${item.originalPath || 'Неизвестно'}</div>
+                            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">
+                                ${isApp ? 'Приложение' : (item.originalPath || 'Неизвестно')}
+                            </div>
                         </div>
                     `;
                 }).join('');
@@ -485,20 +433,27 @@ NX.registerApp({
                 if (selectedItem === null) return;
                 const item = NX.state.trash.splice(selectedItem, 1)[0];
                 
-                let targetNode = NX.fs.root;
-                if (item.originalPath) {
-                    const pathParts = item.originalPath.split('/').filter(Boolean);
-                    targetNode = NX.fs.getNode(pathParts) || NX.fs.root.children.find(c => c.name === 'Документы');
+                // Если это приложение — восстанавливаем его
+                if (item.type === 'app') {
+                    NX.installApp(item.id);
+                    NX.notifications.push('Корзина', `Приложение "${item.name}" восстановлено`, 'check');
                 } else {
-                    targetNode = NX.fs.root.children.find(c => c.name === 'Документы');
-                }
+                    // Если файл/папка — возвращаем в исходную папку
+                    let targetNode = NX.fs.root;
+                    if (item.originalPath) {
+                        const pathParts = item.originalPath.split('/').filter(Boolean);
+                        targetNode = NX.fs.getNode(pathParts) || NX.fs.root.children.find(c => c.name === 'Документы');
+                    } else {
+                        targetNode = NX.fs.root.children.find(c => c.name === 'Документы');
+                    }
 
-                if (targetNode && targetNode.children) {
-                    targetNode.children.push(item);
+                    if (targetNode && targetNode.children) {
+                        targetNode.children.push(item);
+                    }
+                    NX.notifications.push('Корзина', `Объект "${item.name}" восстановлен`, 'check');
                 }
                 
                 NX.saveState();
-                NX.notifications.push('Корзина', `Объект "${item.name}" восстановлен`, 'check');
                 selectedItem = null;
                 render();
             };
@@ -522,6 +477,7 @@ NX.registerApp({
     id: 'antivirus',
     name: '365 Antivirus',
     icon: NX.icons.antivirus,
+    color: '#30b06b',
     w: 700, h: 550, single: true,
     render(body) {
         let isScanning = false;
@@ -611,6 +567,8 @@ NX.registerApp({
                     
                     NX.notifications.push('365 Antivirus', 'Проверка завершена. Угроз не найдено.', 'check');
                     NX.audio.notify();
+                    render(); // Перерисовываем после завершения
+                    return;
                 }
                 
                 const circle = body.querySelector('.av-shield circle:nth-child(2)');
@@ -629,11 +587,10 @@ NX.registerApp({
     id: 'todo',
     name: 'Задачи',
     icon: NX.icons.todo,
+    color: '#ff9f0a',
     w: 500, h: 600,
     render(body) {
-        if (!NX.state.tasks) NX.state.tasks = [
-            { id: 1, text: 'Изучить Nextel OS', done: false }
-        ];
+        if (!NX.state.tasks) NX.state.tasks = [{ id: 1, text: 'Изучить Nextel OS', done: false }];
 
         const render = () => {
             const tasks = NX.state.tasks;
@@ -685,11 +642,7 @@ NX.registerApp({
                 cb.onchange = (e) => {
                     const id = parseInt(cb.dataset.id);
                     const task = NX.state.tasks.find(t => t.id === id);
-                    if (task) {
-                        task.done = e.target.checked;
-                        NX.saveState();
-                        render();
-                    }
+                    if (task) { task.done = e.target.checked; NX.saveState(); render(); }
                 };
             });
 
@@ -712,12 +665,10 @@ NX.registerApp({
     id: 'notes',
     name: 'Заметки',
     icon: NX.icons.notes,
+    color: '#e8c65a',
     w: 750, h: 550,
     render(body) {
-        if (!NX.state.notes) NX.state.notes = [
-            { id: 1, title: 'Добро пожаловать', content: 'Это ваша первая заметка в Nextel OS. Вы можете создавать новые заметки и редактировать их.', date: new Date().toISOString() }
-        ];
-        
+        if (!NX.state.notes) NX.state.notes = [{ id: 1, title: 'Добро пожаловать', content: 'Это ваша первая заметка в Nextel OS.', date: new Date().toISOString() }];
         let currentNoteId = NX.state.notes.length > 0 ? NX.state.notes[0].id : null;
 
         const render = () => {
@@ -753,19 +704,11 @@ NX.registerApp({
             `;
 
             NX.$$('.note-item', body).forEach(el => {
-                el.onclick = () => {
-                    currentNoteId = parseInt(el.dataset.id);
-                    render();
-                };
+                el.onclick = () => { currentNoteId = parseInt(el.dataset.id); render(); };
             });
 
             NX.$('#note-new', body).onclick = () => {
-                const newNote = {
-                    id: Date.now(),
-                    title: 'Новая заметка',
-                    content: '',
-                    date: new Date().toISOString()
-                };
+                const newNote = { id: Date.now(), title: 'Новая заметка', content: '', date: new Date().toISOString() };
                 NX.state.notes.unshift(newNote);
                 currentNoteId = newNote.id;
                 NX.saveState();
@@ -795,6 +738,206 @@ NX.registerApp({
 
                 titleInput.oninput = saveNote;
                 contentInput.oninput = saveNote;
+            }
+        };
+
+        render();
+    }
+});
+
+// --- 7. НАСТРОЙКИ (SETTINGS) ---
+NX.registerApp({
+    id: 'settings',
+    name: 'Настройки',
+    icon: NX.icons.device,
+    color: '#6e6e73',
+    w: 850, h: 650, single: true,
+    render(body) {
+        let currentTab = 'system';
+
+        const render = () => {
+            let contentHtml = '';
+
+            // --- Система ---
+            if (currentTab === 'system') {
+                contentHtml = `
+                    <h2>Система</h2>
+                    <div class="card">
+                        <div class="row"><span>Устройство</span><span>Nextel Book 14</span></div>
+                        <div class="row"><span>Версия ОС</span><span>Nextel OS 2.0.0</span></div>
+                        <div class="row"><span>Ядро</span><span>Nextel Kernel 2.0</span></div>
+                        <div class="row"><span>Процессор</span><span>Nextel N1 8-Core 3.2GHz</span></div>
+                        <div class="row"><span>Оперативная память</span><span>16 GB LPDDR5</span></div>
+                        <div class="row"><span>Накопитель</span><span>512 GB SSD</span></div>
+                    </div>
+                    <h3>Сброс</h3>
+                    <div class="card">
+                        <div class="row"><span>Сбросить настройки</span><button class="btn" id="btn-reset">Сбросить</button></div>
+                    </div>
+                `;
+            } 
+            // --- Персонализация ---
+            else if (currentTab === 'personal') {
+                const wallpapers = [
+                    'linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 50%, #e0f2fe 100%)',
+                    'linear-gradient(135deg, #fce7f3 0%, #ede9fe 50%, #e0e7ff 100%)',
+                    'linear-gradient(135deg, #d1fae5 0%, #f3f4f6 50%, #dbeafe 100%)',
+                    'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                    'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+                ];
+
+                contentHtml = `
+                    <h2>Персонализация</h2>
+                    <h3>Тема оформления</h3>
+                    <div class="card">
+                        <div class="row">
+                            <span>Тёмная тема</span>
+                            <div class="switch ${NX.state.theme === 'dark' ? 'on' : ''}" id="sw-dark"></div>
+                        </div>
+                    </div>
+                    <h3>Фон рабочего стола</h3>
+                    <div class="wallpaper-grid">
+                        ${wallpapers.map((w, i) => `
+                            <div class="wallpaper-item ${NX.state.wallpaper === i ? 'active' : ''}" data-wall="${i}" style="background: ${w};"></div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            // --- Звук ---
+            else if (currentTab === 'sound') {
+                contentHtml = `
+                    <h2>Звук</h2>
+                    <div class="card">
+                        <div class="row">
+                            <span>Громкость системы</span>
+                            <input type="range" min="0" max="100" value="${NX.state.volume}" id="set-volume" style="width:200px;">
+                        </div>
+                    </div>
+                `;
+            }
+            // --- Дисплей ---
+            else if (currentTab === 'display') {
+                contentHtml = `
+                    <h2>Дисплей</h2>
+                    <div class="card">
+                        <div class="row">
+                            <span>Яркость</span>
+                            <input type="range" min="20" max="100" value="${NX.state.brightness}" id="set-brightness" style="width:200px;">
+                        </div>
+                    </div>
+                `;
+            }
+            // --- Приложения ---
+            else if (currentTab === 'apps') {
+                const apps = NX.state.installed.map(id => NX.apps[id]).filter(Boolean);
+                contentHtml = `
+                    <h2>Приложения</h2>
+                    <div class="card">
+                        ${apps.map(app => `
+                            <div class="row">
+                                <span style="display:flex;align-items:center;gap:10px;">
+                                    <span style="color:${app.color}">${app.icon}</span>
+                                    ${NX.esc(app.name)}
+                                </span>
+                                <button class="btn ghost" data-uninstall="${app.id}" style="color:var(--danger);padding:0 10px;">Удалить</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            body.innerHTML = `
+                <div class="settings-app">
+                    <div class="settings-sidebar">
+                        <div class="settings-nav ${currentTab === 'system' ? 'active' : ''}" data-tab="system">
+                            ${NX.icons.device} Система
+                        </div>
+                        <div class="settings-nav ${currentTab === 'personal' ? 'active' : ''}" data-tab="personal">
+                            ${NX.icons.sun} Персонализация
+                        </div>
+                        <div class="settings-nav ${currentTab === 'sound' ? 'active' : ''}" data-tab="sound">
+                            ${NX.icons.music} Звук
+                        </div>
+                        <div class="settings-nav ${currentTab === 'display' ? 'active' : ''}" data-tab="display">
+                            ${NX.icons.monitor || NX.icons.device} Дисплей
+                        </div>
+                        <div class="settings-nav ${currentTab === 'apps' ? 'active' : ''}" data-tab="apps">
+                            ${NX.icons.market} Приложения
+                        </div>
+                    </div>
+                    <div class="settings-main">
+                        ${contentHtml}
+                    </div>
+                </div>
+            `;
+
+            // Навигация по вкладкам
+            NX.$$('.settings-nav', body).forEach(nav => {
+                nav.onclick = () => { currentTab = nav.dataset.tab; render(); };
+            });
+
+            // Обработчики для конкретных вкладок
+            if (currentTab === 'system') {
+                NX.$('#btn-reset', body).onclick = () => {
+                    if (confirm('Сбросить все настройки и файлы? Система перезагрузится.')) {
+                        localStorage.removeItem('nx_state_v2');
+                        location.reload();
+                    }
+                };
+            }
+
+            if (currentTab === 'personal') {
+                NX.$('#sw-dark', body).onclick = function() {
+                    NX.state.theme = NX.state.theme === 'dark' ? 'light' : 'dark';
+                    document.body.className = NX.state.theme + '-theme';
+                    this.classList.toggle('on', NX.state.theme === 'dark');
+                    NX.saveState();
+                };
+
+                NX.$$('.wallpaper-item', body).forEach(w => {
+                    w.onclick = () => {
+                        NX.state.wallpaper = parseInt(w.dataset.wall);
+                        NX.saveState();
+                        // Применяем обои к рабочему столу
+                        const wallpapers = [
+                            'linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 50%, #e0f2fe 100%)',
+                            'linear-gradient(135deg, #fce7f3 0%, #ede9fe 50%, #e0e7ff 100%)',
+                            'linear-gradient(135deg, #d1fae5 0%, #f3f4f6 50%, #dbeafe 100%)',
+                            'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                            'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+                        ];
+                        NX.$('#desktop').style.background = wallpapers[NX.state.wallpaper] || wallpapers[0];
+                        NX.$$('.wallpaper-item', body).forEach(x => x.classList.remove('active'));
+                        w.classList.add('active');
+                    };
+                });
+            }
+
+            if (currentTab === 'sound') {
+                const slider = NX.$('#set-volume', body);
+                slider.oninput = (e) => {
+                    NX.state.volume = e.target.value;
+                    NX.saveState();
+                };
+            }
+
+            if (currentTab === 'display') {
+                const slider = NX.$('#set-brightness', body);
+                slider.oninput = (e) => {
+                    NX.state.brightness = e.target.value;
+                    NX.$('#desktop').style.filter = `brightness(${e.target.value}%)`;
+                    NX.saveState();
+                };
+            }
+
+            if (currentTab === 'apps') {
+                NX.$$('[data-uninstall]', body).forEach(btn => {
+                    btn.onclick = () => {
+                        const id = btn.dataset.uninstall;
+                        NX.uninstallApp(id);
+                        render(); // Обновить список
+                    };
+                });
             }
         };
 
