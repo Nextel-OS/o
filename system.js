@@ -9,6 +9,8 @@ NX.boot = {
         const progress = NX.$('#boot-progress');
         const stage = NX.$('#boot-stage');
         
+        if (!bootScreen || !progress || !stage) return;
+
         const steps = [
             { text: 'Проверка оборудования...', delay: 400, prog: 20 },
             { text: 'Загрузка ядра Nextel...', delay: 600, prog: 45 },
@@ -33,9 +35,8 @@ NX.boot = {
             setTimeout(nextStep, step.delay);
         };
 
-        // Начинаем загрузку
         setTimeout(() => {
-            NX.audio.boot();
+            NX.audio.boot(); // Безопасно, так как AudioContext разблокируется позже
             nextStep();
         }, 500);
     },
@@ -44,67 +45,90 @@ NX.boot = {
         const bootScreen = NX.$('#boot-screen');
         const lockScreen = NX.$('#lock-screen');
         
+        if (!bootScreen || !lockScreen) return;
+
         bootScreen.style.opacity = '0';
         setTimeout(() => {
             bootScreen.style.display = 'none';
             lockScreen.classList.add('active');
             this.updateLockTime();
             setInterval(() => this.updateLockTime(), 1000);
-            NX.$('#lock-pin').focus();
+            
+            const pinInput = NX.$('#lock-pin');
+            if (pinInput) pinInput.focus();
         }, 600);
     },
 
     updateLockTime() {
         const d = new Date();
-        NX.$('#lock-time').textContent = NX.pad(d.getHours()) + ':' + NX.pad(d.getMinutes());
-        NX.$('#lock-date').textContent = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+        const timeEl = NX.$('#lock-time');
+        const dateEl = NX.$('#lock-date');
+        
+        if (timeEl) timeEl.textContent = NX.pad(d.getHours()) + ':' + NX.pad(d.getMinutes());
+        if (dateEl) dateEl.textContent = d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
     },
 
     unlock() {
         const lockScreen = NX.$('#lock-screen');
-        const pin = NX.$('#lock-pin').value;
+        const pinInput = NX.$('#lock-pin');
+        
+        if (!lockScreen || !pinInput) return;
+        
+        const pin = pinInput.value;
         
         if (pin === '1234' || pin === '') {
-            lockScreen.classList.add('unlocking');
+            // Разблокируем звук при первом действии
+            NX.audio.unlock();
             NX.audio.open();
+
+            lockScreen.classList.add('unlocking');
             
             setTimeout(() => {
                 lockScreen.classList.remove('active', 'unlocking');
-                NX.$('#lock-pin').value = '';
-                NX.initUI(); // Инициализация рабочего стола
+                pinInput.value = '';
+                
+                // Инициализация рабочего стола
+                NX.initUI();
                 NX.notifications.push('Nextel OS', 'Добро пожаловать!', 'check');
                 
-                // Обработка восстановления сессии (пока пропустим для простоты)
             }, 400);
         } else {
             NX.audio.error();
-            NX.$('#lock-pin').value = '';
-            const input = NX.$('#lock-pin');
-            input.placeholder = 'Неверный PIN';
-            setTimeout(() => input.placeholder = 'PIN-код', 1500);
+            pinInput.value = '';
+            pinInput.placeholder = 'Неверный PIN';
+            setTimeout(() => pinInput.placeholder = 'PIN-код', 1500);
         }
     },
 
     reboot() {
-        NX.$('#reboot-screen').style.display = 'flex';
-        NX.saveState();
-        setTimeout(() => location.reload(), 2000);
+        const rebootScreen = NX.$('#reboot-screen');
+        if (rebootScreen) {
+            rebootScreen.classList.add('active');
+            NX.saveState();
+            setTimeout(() => location.reload(), 2000);
+        }
     },
 
     shutdown() {
-        NX.$('#power-off-screen').style.display = 'flex';
-        NX.saveState();
-        setTimeout(() => {
-            // В реальной ОС здесь отключение питания. В браузере просто пустой экран.
-            document.body.innerHTML = '<div style="background:#000;width:100vw;height:100vh;"></div>';
-        }, 2000);
+        const powerScreen = NX.$('#power-off-screen');
+        if (powerScreen) {
+            powerScreen.classList.add('active');
+            NX.saveState();
+            setTimeout(() => {
+                document.body.innerHTML = '<div style="background:#000;width:100vw;height:100vh;"></div>';
+            }, 2000);
+        }
     },
 
     lock() {
         const lockScreen = NX.$('#lock-screen');
+        if (!lockScreen) return;
+        
         lockScreen.classList.add('active');
         this.updateLockTime();
-        NX.$('#lock-pin').focus();
+        
+        const pinInput = NX.$('#lock-pin');
+        if (pinInput) pinInput.focus();
     }
 };
 
@@ -112,6 +136,8 @@ NX.boot = {
 NX.startMenu = {
     render(query = '') {
         const menu = NX.$('#start-menu');
+        if (!menu) return;
+        
         const apps = NX.state.installed
             .map(id => NX.apps[id])
             .filter(app => app && app.name.toLowerCase().includes(query.toLowerCase()))
@@ -146,7 +172,6 @@ NX.startMenu = {
 
         menu.innerHTML = html;
 
-        // Обработчики
         const searchInput = menu.querySelector('.sm-search');
         searchInput.addEventListener('input', (e) => this.render(e.target.value));
         searchInput.focus();
@@ -170,7 +195,6 @@ NX.startMenu = {
     },
 
     showPowerMenu() {
-        // Простое меню выбора питания через контекстное меню системы
         NX.showContextMenu(window.innerWidth / 2 - 100, window.innerHeight / 2, [
             { label: 'Заблокировать', icon: NX.icons.lock, action: () => NX.boot.lock() },
             { label: 'Перезагрузка', icon: NX.icons.reboot, action: () => NX.boot.reboot() },
@@ -180,6 +204,8 @@ NX.startMenu = {
 
     toggle() {
         const menu = NX.$('#start-menu');
+        if (!menu) return;
+        
         if (menu.classList.contains('open')) {
             menu.classList.remove('open');
         } else {
@@ -196,6 +222,8 @@ NX.spotlight = {
         const input = NX.$('#spotlight-input');
         const results = NX.$('#spotlight-results');
         
+        if (!overlay || !input || !results) return;
+        
         overlay.classList.add('open');
         input.value = '';
         results.innerHTML = '';
@@ -203,18 +231,20 @@ NX.spotlight = {
 
         input.oninput = () => this.search(input.value);
         
-        // Закрытие по клику вне области
         overlay.onclick = (e) => {
             if (e.target === overlay) this.close();
         };
     },
 
     close() {
-        NX.$('#spotlight-overlay').classList.remove('open');
+        const overlay = NX.$('#spotlight-overlay');
+        if (overlay) overlay.classList.remove('open');
     },
 
     search(query) {
         const results = NX.$('#spotlight-results');
+        if (!results) return;
+        
         if (!query.trim()) {
             results.innerHTML = '';
             return;
@@ -251,7 +281,6 @@ NX.spotlight = {
 
         results.innerHTML = html || `<div style="padding: 20px; text-align: center; color: var(--text-muted);">Ничего не найдено</div>`;
 
-        // Обработчики
         results.querySelectorAll('.sp-result').forEach(el => {
             el.onclick = () => {
                 const action = el.dataset.action;
@@ -271,6 +300,8 @@ NX.spotlight = {
 NX.quickSettings = {
     render() {
         const panel = NX.$('#quick-settings-panel');
+        if (!panel) return;
+        
         const isDark = NX.state.theme === 'dark';
         const wifiOn = NX.state.wifi;
         const btOn = NX.state.bt;
@@ -306,7 +337,6 @@ NX.quickSettings = {
             </div>
         `;
 
-        // Обработчики
         panel.querySelector('#qs-wifi').onclick = (e) => {
             NX.state.wifi = !NX.state.wifi;
             NX.saveState();
@@ -319,11 +349,11 @@ NX.quickSettings = {
             e.currentTarget.classList.toggle('on', NX.state.bt);
         };
 
-        panel.querySelector('#qs-theme').onclick = (e) => {
+        panel.querySelector('#qs-theme').onclick = () => {
             NX.state.theme = NX.state.theme === 'dark' ? 'light' : 'dark';
             document.body.className = NX.state.theme + '-theme';
             NX.saveState();
-            this.render(); // Перерисовываем панель
+            this.render();
         };
 
         panel.querySelector('#qs-settings').onclick = () => {
@@ -345,6 +375,8 @@ NX.quickSettings = {
 
     toggle() {
         const panel = NX.$('#quick-settings-panel');
+        if (!panel) return;
+        
         if (panel.classList.contains('open')) {
             panel.classList.remove('open');
         } else {
@@ -360,6 +392,8 @@ NX.calendar = {
 
     render() {
         const popup = NX.$('#calendar-popup');
+        if (!popup) return;
+        
         const date = this.currentDate;
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -413,6 +447,8 @@ NX.calendar = {
 
     toggle() {
         const popup = NX.$('#calendar-popup');
+        if (!popup) return;
+        
         if (popup.classList.contains('open')) {
             popup.classList.remove('open');
         } else {
@@ -427,8 +463,7 @@ NX.calendar = {
 NX.taskView = {
     open() {
         const overlay = NX.$('#task-view-overlay');
-        const grid = overlay.querySelector('.tv-grid') || document.createElement('div');
-        grid.className = 'tv-grid';
+        if (!overlay) return;
         
         let html = '';
         NX.windows.list.forEach(rec => {
@@ -475,34 +510,38 @@ NX.taskView = {
 // --- 7. ЧАСЫ И СИСТЕМНЫЙ ТРЕЙ ---
 NX.updateClock = () => {
     const d = new Date();
-    NX.$('#clock-time').textContent = NX.pad(d.getHours()) + ':' + NX.pad(d.getMinutes());
-    NX.$('#clock-date').textContent = NX.pad(d.getDate()) + '.' + NX.pad(d.getMonth() + 1) + '.' + d.getFullYear();
+    const timeEl = NX.$('#clock-time');
+    const dateEl = NX.$('#clock-date');
+    
+    if (timeEl) timeEl.textContent = NX.pad(d.getHours()) + ':' + NX.pad(d.getMinutes());
+    if (dateEl) dateEl.textContent = NX.pad(d.getDate()) + '.' + NX.pad(d.getMonth() + 1) + '.' + d.getFullYear();
 };
 
-// --- 8. ГОРЯЧИЕ КЛАВИШИ И ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ ---
+// --- 8. ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ ---
 NX.initSystem = () => {
     // Часы
     setInterval(NX.updateClock, 1000);
     NX.updateClock();
 
-    // Обработчики кнопок панели задач
-    NX.$('#start-btn').innerHTML = NX.icons.logo;
-    NX.$('#search-btn').innerHTML = NX.icons.search;
-    NX.$('#tray-notifications').innerHTML = NX.icons.bell;
-    NX.$('#tray-quick-settings').innerHTML = NX.icons.wifi;
-    NX.$('#lock-reboot-btn').innerHTML = NX.icons.reboot;
-    NX.$('#lock-shutdown-btn').innerHTML = NX.icons.power;
-
-    NX.$('#start-btn').onclick = (e) => {
-        e.stopPropagation();
-        NX.startMenu.toggle();
+    // Установка иконок
+    const iconsToSet = {
+        '#start-btn': NX.icons.logo,
+        '#search-btn': NX.icons.search,
+        '#tray-notifications': NX.icons.bell,
+        '#tray-quick-settings': NX.icons.wifi,
+        '#lock-reboot-btn': NX.icons.reboot,
+        '#lock-shutdown-btn': NX.icons.power
     };
+    
+    Object.entries(iconsToSet).forEach(([sel, icon]) => {
+        const el = NX.$(sel);
+        if (el) el.innerHTML = icon;
+    });
 
-    NX.$('#search-btn').onclick = (e) => {
-        e.stopPropagation();
-        NX.spotlight.open();
-    };
-
+    // Обработчики кнопок
+    NX.$('#start-btn').onclick = (e) => { e.stopPropagation(); NX.startMenu.toggle(); };
+    NX.$('#search-btn').onclick = (e) => { e.stopPropagation(); NX.spotlight.open(); };
+    
     NX.$('#tray-notifications').onclick = (e) => {
         e.stopPropagation();
         const center = NX.$('#notification-center');
@@ -524,10 +563,14 @@ NX.initSystem = () => {
         NX.calendar.toggle();
     };
 
-    NX.$('#tray-show-desktop').onclick = () => {
-        NX.windows.list.forEach(w => NX.minimizeWindow(w));
-    };
+    const showDesktopBtn = NX.$('#tray-show-desktop');
+    if (showDesktopBtn) {
+        showDesktopBtn.onclick = () => {
+            NX.windows.list.forEach(w => NX.minimizeWindow(w));
+        };
+    }
 
+    // Экран блокировки
     NX.$('#lock-btn').onclick = () => NX.boot.unlock();
     NX.$('#lock-pin').onkeydown = (e) => {
         if (e.key === 'Enter') NX.boot.unlock();
@@ -571,7 +614,7 @@ NX.initSystem = () => {
     });
 
     // Восстановление темы
-    document.body.className = NX.state.theme + '-theme';
+    document.body.className = (NX.state.theme || 'light') + '-theme';
     
     // Старт загрузки
     NX.boot.start();
