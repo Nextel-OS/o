@@ -13,7 +13,9 @@ NX.windows = {
 // --- РЕГИСТРАЦИЯ ПРИЛОЖЕНИЙ ---
 NX.registerApp = function(config) {
     NX.apps[config.id] = Object.assign({
-        w: 600, h: 450, single: false, type: 'app'
+        w: 600, h: 450, single: false, type: 'app',
+        category: 'Программы', description: '', rating: 4.5,
+        size: '5 МБ'
     }, config);
 };
 
@@ -25,7 +27,17 @@ NX.openApp = function(appId, args = {}) {
         return;
     }
 
-    // Синглтон (например, калькулятор)
+    // Алевтина открывается как панель, а не как окно
+    if (appId === 'assistant') {
+        if (NX.alevtina && NX.alevtina.openPanel) {
+            NX.alevtina.openPanel();
+            return null;
+        }
+        NX.notifications.push('Алевтина', 'Ассистент пока не готов. Установите через NMarket.', 'info');
+        return null;
+    }
+
+    // Синглтон
     if (app.single) {
         const existing = NX.windows.list.find(w => w.appId === appId);
         if (existing) {
@@ -37,10 +49,10 @@ NX.openApp = function(appId, args = {}) {
 
     const win = document.createElement('div');
     win.className = 'window';
+    win.dataset.appId = appId;
     win.style.width = Math.min(app.w, window.innerWidth - 40) + 'px';
     win.style.height = Math.min(app.h, window.innerHeight - 100) + 'px';
     
-    // Каскад
     const offset = (NX.windows.list.length % 8) * 24;
     win.style.left = Math.max(20, (window.innerWidth - app.w) / 2 - 100 + offset) + 'px';
     win.style.top = Math.max(20, (window.innerHeight - app.h) / 2 - 50 + offset) + 'px';
@@ -70,6 +82,7 @@ NX.openApp = function(appId, args = {}) {
         el: win,
         minimized: false,
         maximized: false,
+        snapped: null,
         cleanups: []
     };
     NX.windows.list.push(rec);
@@ -81,19 +94,15 @@ NX.openApp = function(appId, args = {}) {
         onClose: (fn) => rec.cleanups.push(fn)
     };
 
-    // Кнопки окна
     NX.$('.btn-min', win).onclick = (e) => { e.stopPropagation(); NX.minimizeWindow(rec); };
     NX.$('.btn-max', win).onclick = (e) => { e.stopPropagation(); NX.maximizeWindow(rec); };
     NX.$('.btn-close', win).onclick = (e) => { e.stopPropagation(); NX.closeWindow(rec); };
 
-    // Фокус
     win.addEventListener('mousedown', () => NX.focusWindow(rec), true);
 
-    // Перетаскивание и ресайз
     NX.makeDraggable(win, NX.$('.titlebar', win), rec);
     NX.makeResizable(win, NX.$('.resizer', win), rec);
 
-    // Рендер приложения
     try {
         app.render(content, ctx);
     } catch (e) {
@@ -104,6 +113,7 @@ NX.openApp = function(appId, args = {}) {
     NX.focusWindow(rec);
     NX.refreshTaskbar();
     NX.audio.open();
+    NX.saveSession();
     
     return rec;
 };
@@ -120,12 +130,14 @@ NX.minimizeWindow = function(rec) {
     rec.el.style.display = 'none';
     if (NX.windows.focused === rec) NX.windows.focused = null;
     NX.refreshTaskbar();
+    NX.saveSession();
 };
 
 NX.restoreWindow = function(rec) {
     rec.minimized = false;
     rec.el.style.display = 'flex';
     NX.refreshTaskbar();
+    NX.saveSession();
 };
 
 NX.maximizeWindow = function(rec) {
@@ -146,12 +158,11 @@ NX.maximizeWindow = function(rec) {
         win.classList.add('maximized');
         rec.maximized = true;
     }
-    // Важно для игр и канвасов
     window.dispatchEvent(new Event('resize'));
+    NX.saveSession();
 };
 
 NX.closeWindow = function(rec) {
-    // Очистка таймеров игр
     rec.cleanups.forEach(fn => { try { fn(); } catch(e) { console.error(e); } });
     
     rec.el.classList.add('closing');
@@ -161,28 +172,64 @@ NX.closeWindow = function(rec) {
         if (NX.windows.focused === rec) NX.windows.focused = null;
         NX.refreshTaskbar();
         NX.audio.close();
+        NX.saveSession();
     }, 150);
 };
 
 NX.makeDraggable = function(win, handle, rec) {
     handle.addEventListener('pointerdown', (e) => {
-        if (e.target.closest('.tb-btn') || rec.maximized) return;
+        if (e.target.closest('.tb-btn')) return;
+        if (rec.maximized) return;
+
         const rect = win.getBoundingClientRect();
         const dx = e.clientX - rect.left;
         const dy = e.clientY - rect.top;
-        
+        let snapZone = null;
+
         handle.setPointerCapture(e.pointerId);
-        
+
         const onMove = (ev) => {
+            // Snap-зоны (только у краёв экрана)
+            const margin = 20;
+            let newSnap = null;
+            if (ev.clientY < margin) newSnap = 'top';
+            else if (ev.clientX < margin) newSnap = 'left';
+            else if (ev.clientX > window.innerWidth - margin) newSnap = 'right';
+
+            if (newSnap !== snapZone) {
+                snapZone = newSnap;
+                // Можно показать превью (пока просто уведомление)
+            }
+
             win.style.left = Math.max(0, Math.min(window.innerWidth - rect.width, ev.clientX - dx)) + 'px';
             win.style.top = Math.max(0, Math.min(window.innerHeight - 48, ev.clientY - dy)) + 'px';
         };
-        
+
         const onUp = () => {
             handle.removeEventListener('pointermove', onMove);
             handle.removeEventListener('pointerup', onUp);
+
+            // Применяем snap
+            if (snapZone === 'left') {
+                Object.assign(win.style, {
+                    left: '0px', top: '0px',
+                    width: '50%', height: '100%'
+                });
+                rec.snapped = 'left';
+            } else if (snapZone === 'right') {
+                Object.assign(win.style, {
+                    left: '50%', top: '0px',
+                    width: '50%', height: '100%'
+                });
+                rec.snapped = 'right';
+            } else if (snapZone === 'top') {
+                NX.maximizeWindow(rec);
+            }
+            
+            window.dispatchEvent(new Event('resize'));
+            NX.saveSession();
         };
-        
+
         handle.addEventListener('pointermove', onMove);
         handle.addEventListener('pointerup', onUp);
     });
@@ -206,6 +253,7 @@ NX.makeResizable = function(win, grip, rec) {
         const onUp = () => {
             grip.removeEventListener('pointermove', onMove);
             grip.removeEventListener('pointerup', onUp);
+            NX.saveSession();
         };
         
         grip.addEventListener('pointermove', onMove);
@@ -240,7 +288,43 @@ NX.refreshTaskbar = function() {
         
         container.appendChild(btn);
     });
+
+    // Обновить индикатор батареи
+    NX.updateBatteryIndicator();
 };
+
+// --- ИНДИКАТОР БАТАРЕИ В ТРЕЕ ---
+NX.updateBatteryIndicator = function() {
+    const tray = NX.$('#tray-battery');
+    if (!tray) return;
+    
+    if (!NX.battery.supported) {
+        tray.style.display = 'none';
+        return;
+    }
+    
+    tray.style.display = 'flex';
+    const level = NX.battery.level;
+    const charging = NX.battery.charging;
+    const icon = charging ? NX.icons.batteryCharging : NX.icons.battery;
+    const color = level < 20 ? 'var(--danger)' : (level < 50 ? 'var(--warning)' : 'var(--success)');
+    
+    tray.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;color:${color};" title="${level}%${charging ? ' (заряжается)' : ''}">
+            <span style="width:22px;height:22px;display:inline-block;">${icon}</span>
+            <span style="font-size:11px;font-weight:600;">${level}%</span>
+        </div>
+    `;
+    
+    // Обновить полоску внутри иконки
+    const fill = tray.querySelector('.bat-fill');
+    if (fill) {
+        const width = Math.max(2, (level / 100) * 10);
+        fill.setAttribute('width', width);
+    }
+};
+
+NX.bus.on('battery-change', () => NX.updateBatteryIndicator());
 
 // --- РАБОЧИЙ СТОЛ ---
 NX.renderDesktop = function() {
@@ -248,9 +332,7 @@ NX.renderDesktop = function() {
     if (!container) return;
     container.innerHTML = '';
     
-    // Делаем копию, чтобы не мутировать оригинал при сортировке
     const apps = [...NX.state.installed].map(id => NX.apps[id]).filter(Boolean);
-    // Сортируем в том порядке, в котором они лежат в state.installed
     apps.sort((a, b) => NX.state.installed.indexOf(a.id) - NX.state.installed.indexOf(b.id));
     
     apps.forEach(app => {
@@ -263,7 +345,6 @@ NX.renderDesktop = function() {
             <span class="label">${NX.esc(app.name)}</span>
         `;
         
-        // Выделение
         el.addEventListener('mousedown', (e) => {
             e.stopPropagation();
             if (!e.ctrlKey) {
@@ -272,12 +353,12 @@ NX.renderDesktop = function() {
             el.classList.add('selected');
         });
         
-        // Открытие
+        // Открытие по двойному клику
         el.addEventListener('dblclick', () => {
             NX.openApp(app.id);
         });
         
-        // ===== DRAG-AND-DROP: перетаскивание иконок =====
+        // Drag-and-drop
         el.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', app.id);
             e.dataTransfer.effectAllowed = 'move';
@@ -306,7 +387,6 @@ NX.renderDesktop = function() {
             const draggedId = e.dataTransfer.getData('text/plain');
             if (!draggedId || draggedId === app.id) return;
             
-            // Меняем порядок в массиве installed
             const installed = NX.state.installed;
             const fromIdx = installed.indexOf(draggedId);
             const toIdx = installed.indexOf(app.id);
@@ -318,7 +398,7 @@ NX.renderDesktop = function() {
             }
         });
         
-        // ===== КОНТЕКСТНОЕ МЕНЮ (правильное удаление) =====
+        // Контекстное меню
         el.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -337,7 +417,7 @@ NX.renderDesktop = function() {
     });
 };
 
-// --- ВЫДЕЛЕНИЕ РАМКОЙ (MARQUEE) ---
+// --- РАМКА ВЫДЕЛЕНИЯ ---
 NX.initMarquee = function() {
     const desktop = NX.$('#desktop');
     const marquee = NX.$('#selection-marquee');
@@ -378,7 +458,6 @@ NX.initMarquee = function() {
                 const ir = icon.getBoundingClientRect();
                 const ix = ir.left - rect.left;
                 const iy = ir.top - rect.top;
-                
                 const intersect = ix < x + w && ix + ir.width > x && iy < y + h && iy + ir.height > y;
                 icon.classList.toggle('selected', intersect);
             });
@@ -429,7 +508,6 @@ NX.showContextMenu = function(x, y, items) {
     menu.style.top = Math.min(y, window.innerHeight - rect.height - 10) + 'px';
 };
 
-// Закрытие меню при клике вне его
 document.addEventListener('mousedown', (e) => {
     if (!e.target.closest('#context-menu')) {
         const cm = NX.$('#context-menu');
@@ -437,7 +515,7 @@ document.addEventListener('mousedown', (e) => {
     }
 });
 
-// --- ВИДЖЕТЫ (С ПЕРЕТАСКИВАНИЕМ) ---
+// --- ВИДЖЕТЫ ---
 NX.renderWidgets = function() {
     const container = NX.$('#widgets-container');
     if (!container) return;
@@ -448,7 +526,6 @@ NX.renderWidgets = function() {
         el.className = 'widget';
         el.style.top = w.top + 'px';
         el.style.right = w.right + 'px';
-        el.dataset.idx = index;
 
         if (w.type === 'clock') {
             el.innerHTML = `
@@ -468,9 +545,22 @@ NX.renderWidgets = function() {
                     if(el.querySelector('.w-temp')) {
                         el.querySelector('.w-temp').textContent = (d.current.temperature_2m > 0 ? '+' : '') + Math.round(d.current.temperature_2m) + '°';
                     }
-                }).catch(() => {
-                    if(el.querySelector('.w-temp')) el.querySelector('.w-temp').textContent = '—';
-                });
+                }).catch(() => {});
+        } else if (w.type === 'battery') {
+            el.innerHTML = `
+                <div class="widget-header">Батарея</div>
+                <div style="font-size:36px;font-weight:300;letter-spacing:-1px;" class="w-bat">--%</div>
+                <div style="font-size:12px;color:var(--text-muted);" class="w-bat-status">—</div>
+            `;
+            const updateBat = () => {
+                if (!NX.battery.supported) return;
+                const bat = el.querySelector('.w-bat');
+                const status = el.querySelector('.w-bat-status');
+                if (bat) bat.textContent = NX.battery.level + '%';
+                if (status) status.textContent = NX.battery.charging ? 'Заряжается' : 'От батареи';
+            };
+            updateBat();
+            NX.bus.on('battery-change', updateBat);
         }
 
         if (w.type === 'clock') {
@@ -485,39 +575,69 @@ NX.renderWidgets = function() {
             setInterval(updateTime, 10000);
         }
 
-        // Перетаскивание виджета
         let startX, startY, startTop, startRight;
         el.addEventListener('pointerdown', (e) => {
             if (e.target.closest('button') || e.target.closest('a')) return;
-
             el.setPointerCapture(e.pointerId);
             startX = e.clientX;
             startY = e.clientY;
             startTop = w.top;
             startRight = w.right;
-
             const onMove = (ev) => {
-                const dx = ev.clientX - startX;
-                const dy = ev.clientY - startY;
-                
-                w.top = startTop + dy;
-                w.right = startRight - dx;
-
+                w.top = startTop + (ev.clientY - startY);
+                w.right = startRight - (ev.clientX - startX);
                 el.style.top = w.top + 'px';
                 el.style.right = w.right + 'px';
             };
-
             const onUp = () => {
                 el.removeEventListener('pointermove', onMove);
                 el.removeEventListener('pointerup', onUp);
                 NX.saveState();
             };
-
             el.addEventListener('pointermove', onMove);
             el.addEventListener('pointerup', onUp);
         });
 
         container.appendChild(el);
+    });
+};
+
+// --- СОХРАНЕНИЕ И ВОССТАНОВЛЕНИЕ СЕССИИ ---
+NX.saveSession = function() {
+    const session = NX.windows.list.map(w => ({
+        appId: w.appId,
+        left: w.el.style.left,
+        top: w.el.style.top,
+        width: w.el.style.width,
+        height: w.el.style.height,
+        maximized: w.maximized,
+        minimized: w.minimized,
+        args: {} // args не сохраняем, чтобы не раздувать localStorage
+    }));
+    NX.state.session = session;
+    NX.saveState();
+};
+
+NX.restoreSession = function() {
+    const session = NX.state.session || [];
+    if (session.length === 0) return;
+    session.forEach((s, i) => {
+        if (!NX.apps[s.appId]) return;
+        setTimeout(() => {
+            try {
+                const rec = NX.openApp(s.appId);
+                if (rec) {
+                    if (s.left) rec.el.style.left = s.left;
+                    if (s.top) rec.el.style.top = s.top;
+                    if (s.width) rec.el.style.width = s.width;
+                    if (s.height) rec.el.style.height = s.height;
+                    if (s.maximized) NX.maximizeWindow(rec);
+                    if (s.minimized) NX.minimizeWindow(rec);
+                }
+            } catch (e) {
+                console.warn('Не удалось восстановить окно', s.appId, e);
+            }
+        }, i * 100);
     });
 };
 
@@ -527,10 +647,11 @@ NX.initUI = function() {
     NX.renderWidgets();
     NX.initMarquee();
     NX.refreshTaskbar();
+    NX.updateBatteryIndicator();
+    NX.restoreSession();
 
-    // Контекстное меню на рабочем столе
     NX.$('#desktop').addEventListener('contextmenu', (e) => {
-        if (e.target.closest('.desktop-icon') || e.target.closest('.widget')) return;
+        if (e.target.closest('.desktop-icon') || e.target.closest('.widget') || e.target.closest('.window')) return;
         e.preventDefault();
         
         NX.showContextMenu(e.clientX, e.clientY, [
@@ -539,9 +660,17 @@ NX.initUI = function() {
                 NX.renderWidgets();
             }},
             { sep: true },
-            { label: 'Персонализация', icon: NX.icons.sun, action: () => {
-                NX.openApp('settings', { tab: 'personal' });
+            { label: 'Сменить обои', icon: NX.icons.sun, action: () => {
+                NX.openApp('settings');
+            }},
+            { label: 'Живые обои', icon: NX.icons.star || NX.icons.sun, action: () => {
+                NX.openApp('settings');
             }}
         ]);
+    });
+    
+    // Сохраняем сессию перед закрытием
+    window.addEventListener('beforeunload', () => {
+        NX.saveSession();
     });
 };
