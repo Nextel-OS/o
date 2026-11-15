@@ -8,6 +8,8 @@ NX.registerApp({
     name: 'Калькулятор',
     icon: NX.icons.calc,
     color: '#5e5ce6',
+    category: 'Утилиты',
+    description: 'Простой и удобный калькулятор с поддержкой клавиатуры.',
     w: 360, h: 540, single: true,
     render(body) {
         body.innerHTML = `
@@ -106,7 +108,6 @@ NX.registerApp({
             if (btn) handleInput(btn.dataset.k);
         });
 
-        // Поддержка клавиатуры
         const keyHandler = (e) => {
             if (!NX.windows.focused || NX.windows.focused.el !== body.closest('.window')) return;
             
@@ -136,6 +137,8 @@ NX.registerApp({
     name: 'Wart',
     icon: NX.icons.wart,
     color: '#4a6fa5',
+    category: 'Программы',
+    description: 'Текстовый редактор с форматированием, поиском и экспортом в PDF.',
     w: 850, h: 650,
     render(body, ctx) {
         let history = [];
@@ -184,6 +187,7 @@ NX.registerApp({
                     <span class="w-count">0 слов</span>
                 </div>
             </div>
+            
             <!-- Модальное окно поиска -->
             <div id="wart-find-modal" style="position:absolute;top:60px;right:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);padding:16px;display:none;z-index:100;width:300px;">
                 <div style="font-weight:600;margin-bottom:12px;">Поиск и замена</div>
@@ -193,6 +197,17 @@ NX.registerApp({
                     <button class="btn" id="find-next">Далее</button>
                     <button class="btn" id="find-replace">Заменить</button>
                     <button class="btn ghost" id="find-close">Закрыть</button>
+                </div>
+            </div>
+
+            <!-- Модальное окно открытия файлов -->
+            <div id="wart-open-modal" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);display:none;z-index:200;align-items:center;justify-content:center;padding:20px;">
+                <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:480px;max-height:70vh;display:flex;flex-direction:column;overflow:hidden;">
+                    <div style="padding:16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;align-items:center;">
+                        <span>Открыть документ</span>
+                        <button class="btn ghost" id="wart-open-close" style="width:28px;height:28px;padding:0;justify-content:center;">×</button>
+                    </div>
+                    <div style="flex:1;overflow-y:auto;padding:8px;" id="wart-open-list"></div>
                 </div>
             </div>
         `;
@@ -275,7 +290,6 @@ NX.registerApp({
             const find = NX.$('#find-text', body).value;
             const replace = NX.$('#replace-text', body).value;
             if (!find) return;
-            
             const html = editor.innerHTML;
             const newHtml = html.split(find).join(replace);
             if (html !== newHtml) {
@@ -313,25 +327,61 @@ NX.registerApp({
             NX.notifications.push('Wart', `Файл ${filename} сохранен`, 'save');
         };
 
-        // Открытие из ФС
-        NX.$('#wart-open', body).onclick = () => {
-            const docs = NX.fs.root.children.find(c => c.name === 'Документы');
+        // ===== ОБНОВЛЕНО: Открытие с удалением =====
+        const openModal = NX.$('#wart-open-modal', body);
+        const openList = NX.$('#wart-open-list', body);
+        
+        const renderOpenList = () => {
+            const docs = NX.fs.getNode(['Документы']);
             const files = docs.children.filter(c => c.type === 'file' && c.kind === 'txt');
+            
             if (files.length === 0) {
-                NX.notifications.push('Wart', 'Нет текстовых файлов в Документах', 'info');
+                openList.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted);">Нет документов</div>`;
                 return;
             }
-            const names = files.map(f => f.name).join('\n');
-            const name = prompt(`Доступные файлы:\n${names}\n\nВведите имя файла:`, files[0].name);
-            const file = files.find(f => f.name === name);
-            if (file) {
-                editor.innerHTML = file.content;
-                filename = file.name;
-                nameEl.textContent = filename;
-                updateStats();
-                saveHistory();
-            }
+            
+            openList.innerHTML = files.map(f => `
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:6px;margin-bottom:4px;background:var(--surface-2);">
+                    <span style="color:var(--accent);flex:none;">${NX.icons.fileTxt}</span>
+                    <span style="flex:1;font-size:13px;cursor:pointer;" class="open-file" data-name="${NX.esc(f.name)}">${NX.esc(f.name)}</span>
+                    <button class="btn ghost del-file" data-name="${NX.esc(f.name)}" style="width:28px;height:28px;padding:0;justify-content:center;color:var(--danger);" title="Удалить">${NX.icons.trash}</button>
+                </div>
+            `).join('');
+            
+            openList.querySelectorAll('.open-file').forEach(el => {
+                el.onclick = () => {
+                    const name = el.dataset.name;
+                    const file = files.find(f => f.name === name);
+                    if (file) {
+                        editor.innerHTML = file.content;
+                        filename = file.name;
+                        nameEl.textContent = filename;
+                        updateStats();
+                        saveHistory();
+                        openModal.style.display = 'none';
+                    }
+                };
+            });
+            
+            openList.querySelectorAll('.del-file').forEach(el => {
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    const name = el.dataset.name;
+                    if (confirm(`Удалить "${name}"? Файл будет перемещён в корзину.`)) {
+                        NX.fs.deleteFile('Документы', name);
+                        NX.notifications.push('Wart', `Файл "${name}" перемещён в корзину`, 'trash');
+                        renderOpenList();
+                    }
+                };
+            });
         };
+
+        NX.$('#wart-open', body).onclick = () => {
+            renderOpenList();
+            openModal.style.display = 'flex';
+        };
+        NX.$('#wart-open-close', body).onclick = () => openModal.style.display = 'none';
+        openModal.onclick = (e) => { if (e.target === openModal) openModal.style.display = 'none'; };
 
         // Экспорт в PDF
         NX.$('#wart-pdf', body).onclick = () => {
@@ -360,6 +410,8 @@ NX.registerApp({
     name: 'Point',
     icon: NX.icons.point,
     color: '#ff6b6b',
+    category: 'Программы',
+    description: 'Рисование и графика. Кисти, фигуры, заливка.',
     w: 850, h: 650,
     render(body, ctx) {
         body.innerHTML = `
@@ -389,10 +441,22 @@ NX.registerApp({
                     <button class="btn ghost" id="pt-undo">↶</button>
                     <button class="btn ghost" id="pt-redo">↷</button>
                     <button class="btn ghost" id="pt-clear">Очистить</button>
+                    <button class="btn ghost" id="pt-mygallery" title="Мои рисунки">${NX.icons.gallery}</button>
                     <button class="btn primary" id="pt-save">${NX.icons.save} Сохранить</button>
                 </div>
                 <div class="point-canvas-wrap">
                     <canvas id="pt-canvas"></canvas>
+                </div>
+            </div>
+            
+            <!-- Модальное окно "Мои рисунки" с удалением -->
+            <div id="pt-gallery-modal" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);display:none;z-index:200;align-items:center;justify-content:center;padding:20px;">
+                <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:640px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;">
+                    <div style="padding:16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;align-items:center;">
+                        <span>Мои рисунки</span>
+                        <button class="btn ghost" id="pt-gallery-close" style="width:28px;height:28px;padding:0;justify-content:center;">×</button>
+                    </div>
+                    <div style="flex:1;overflow-y:auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;" id="pt-gallery-list"></div>
                 </div>
             </div>
         `;
@@ -579,7 +643,68 @@ NX.registerApp({
             NX.notifications.push('Point', `Рисунок ${name} сохранен`, 'save');
         };
 
-        // Открытие существующего изображения (из ФМ)
+        // ===== НОВОЕ: Мои рисунки с удалением =====
+        const galleryModal = NX.$('#pt-gallery-modal', body);
+        const galleryList = NX.$('#pt-gallery-list', body);
+
+        const renderGallery = () => {
+            const images = NX.fs.getImages();
+            
+            if (images.length === 0) {
+                galleryList.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">Нет сохранённых рисунков</div>`;
+                return;
+            }
+            
+            galleryList.innerHTML = images.map(img => `
+                <div style="position:relative;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface-2);">
+                    <div style="aspect-ratio:1;cursor:pointer;display:flex;align-items:center;justify-content:center;" class="open-img" data-name="${NX.esc(img.name)}">
+                        <img src="${img.content}" style="max-width:100%;max-height:100%;object-fit:contain;">
+                    </div>
+                    <div style="padding:6px 8px;font-size:11px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+                        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${NX.esc(img.name)}</span>
+                        <button class="del-img" data-name="${NX.esc(img.name)}" style="width:22px;height:22px;padding:0;border:none;background:transparent;color:var(--danger);cursor:pointer;border-radius:4px;" title="Удалить">×</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            galleryList.querySelectorAll('.open-img').forEach(el => {
+                el.onclick = () => {
+                    const name = el.dataset.name;
+                    const img = images.find(i => i.name === name);
+                    if (img) {
+                        const image = new Image();
+                        image.onload = () => {
+                            ctxCanvas.fillStyle = '#ffffff';
+                            ctxCanvas.fillRect(0, 0, canvas.width, canvas.height);
+                            ctxCanvas.drawImage(image, 0, 0, wrap.clientWidth, wrap.clientHeight);
+                            saveState();
+                        };
+                        image.src = img.content;
+                        galleryModal.style.display = 'none';
+                    }
+                };
+            });
+            
+            galleryList.querySelectorAll('.del-img').forEach(el => {
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    const name = el.dataset.name;
+                    if (confirm(`Удалить "${name}"? Файл будет перемещён в корзину.`)) {
+                        NX.fs.deleteImage(name);
+                        NX.notifications.push('Point', `Рисунок "${name}" перемещён в корзину`, 'trash');
+                        renderGallery();
+                    }
+                };
+            });
+        };
+
+        NX.$('#pt-mygallery', body).onclick = () => {
+            renderGallery();
+            galleryModal.style.display = 'flex';
+        };
+        NX.$('#pt-gallery-close', body).onclick = () => galleryModal.style.display = 'none';
+        galleryModal.onclick = (e) => { if (e.target === galleryModal) galleryModal.style.display = 'none'; };
+
         if (ctx.args && ctx.args.content) {
             setTimeout(() => {
                 const img = new Image();
@@ -600,11 +725,14 @@ NX.registerApp({
     name: 'Power Paint',
     icon: NX.icons.powerpaint,
     color: '#ff9f0a',
+    category: 'Программы',
+    description: 'Создание презентаций. Темы, заметки, показ.',
     w: 950, h: 650,
     render(body, ctx) {
         let slides = [{ title: 'Новая презентация', text: '', notes: '' }];
         let currentSlide = 0;
         let presenting = false;
+        let currentFilename = 'Презентация.ppt';
 
         const themes = {
             light: { bg: '#ffffff', text: '#111827', accent: '#3b82f6' },
@@ -616,7 +744,7 @@ NX.registerApp({
         body.innerHTML = `
             <div class="pp-app">
                 <div class="pp-sidebar">
-                    <button class="btn primary" id="pp-add-slide">${NX.icons.x} Добавить слайд</button>
+                    <button class="btn primary" id="pp-add-slide">+ Слайд</button>
                     <div id="pp-slides-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
                 </div>
                 <div class="pp-main">
@@ -629,6 +757,7 @@ NX.registerApp({
                             <option value="gradient">Градиент</option>
                         </select>
                         <button class="btn ghost" id="pp-notes">Заметки</button>
+                        <button class="btn ghost" id="pp-open">${NX.icons.folder} Открыть</button>
                         <div style="flex:1"></div>
                         <button class="btn primary" id="pp-save">${NX.icons.save} Сохранить</button>
                     </div>
@@ -642,6 +771,17 @@ NX.registerApp({
                         <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--text-muted);">ЗАМЕТКИ ДОКЛАДЧИКА</div>
                         <textarea id="pp-notes-input" style="width:100%;height:60px;border:1px solid var(--border);border-radius:4px;padding:8px;resize:none;font-size:13px;" placeholder="Введите заметки..."></textarea>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Модальное окно открытия презентаций с удалением -->
+            <div id="pp-open-modal" style="position:absolute;inset:0;background:rgba(0,0,0,0.4);display:none;z-index:200;align-items:center;justify-content:center;padding:20px;">
+                <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:480px;max-height:70vh;display:flex;flex-direction:column;overflow:hidden;">
+                    <div style="padding:16px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;align-items:center;">
+                        <span>Открыть презентацию</span>
+                        <button class="btn ghost" id="pp-open-close" style="width:28px;height:28px;padding:0;justify-content:center;">×</button>
+                    </div>
+                    <div style="flex:1;overflow-y:auto;padding:8px;" id="pp-open-list"></div>
                 </div>
             </div>
         `;
@@ -714,12 +854,73 @@ NX.registerApp({
 
         NX.$('#pp-save', body).onclick = () => {
             saveCurrentSlide();
-            const name = prompt('Имя презентации:', 'Презентация.ppt');
+            const name = prompt('Имя презентации:', currentFilename);
             if (!name) return;
+            currentFilename = name;
             NX.fs.addFile('Документы', name, JSON.stringify(slides), 'ppt');
             NX.notifications.push('Power Paint', `Презентация ${name} сохранена`, 'save');
         };
 
+        // ===== НОВОЕ: Открытие с удалением =====
+        const openModal = NX.$('#pp-open-modal', body);
+        const openList = NX.$('#pp-open-list', body);
+        
+        const renderOpenList = () => {
+            const docs = NX.fs.getNode(['Документы']);
+            const files = docs.children.filter(c => c.type === 'file' && c.kind === 'ppt');
+            
+            if (files.length === 0) {
+                openList.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text-muted);">Нет презентаций</div>`;
+                return;
+            }
+            
+            openList.innerHTML = files.map(f => `
+                <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:6px;margin-bottom:4px;background:var(--surface-2);">
+                    <span style="color:var(--accent);flex:none;">${NX.icons.filePpt}</span>
+                    <span style="flex:1;font-size:13px;cursor:pointer;" class="open-file" data-name="${NX.esc(f.name)}">${NX.esc(f.name)}</span>
+                    <button class="btn ghost del-file" data-name="${NX.esc(f.name)}" style="width:28px;height:28px;padding:0;justify-content:center;color:var(--danger);" title="Удалить">${NX.icons.trash}</button>
+                </div>
+            `).join('');
+            
+            openList.querySelectorAll('.open-file').forEach(el => {
+                el.onclick = () => {
+                    const name = el.dataset.name;
+                    const file = files.find(f => f.name === name);
+                    if (file) {
+                        try {
+                            slides = JSON.parse(file.content);
+                            currentSlide = 0;
+                            currentFilename = file.name;
+                            loadSlide();
+                            openModal.style.display = 'none';
+                        } catch (e) {
+                            NX.notifications.push('Power Paint', 'Ошибка чтения файла', 'info');
+                        }
+                    }
+                };
+            });
+            
+            openList.querySelectorAll('.del-file').forEach(el => {
+                el.onclick = (e) => {
+                    e.stopPropagation();
+                    const name = el.dataset.name;
+                    if (confirm(`Удалить "${name}"? Файл будет перемещён в корзину.`)) {
+                        NX.fs.deleteFile('Документы', name);
+                        NX.notifications.push('Power Paint', `Презентация "${name}" перемещена в корзину`, 'trash');
+                        renderOpenList();
+                    }
+                };
+            });
+        };
+
+        NX.$('#pp-open', body).onclick = () => {
+            renderOpenList();
+            openModal.style.display = 'flex';
+        };
+        NX.$('#pp-open-close', body).onclick = () => openModal.style.display = 'none';
+        openModal.onclick = (e) => { if (e.target === openModal) openModal.style.display = 'none'; };
+
+        // Показ слайдов
         NX.$('#pp-present', body).onclick = () => {
             saveCurrentSlide();
             presenting = true;
