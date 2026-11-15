@@ -8,11 +8,13 @@ NX.registerApp({
     name: 'Терминал',
     icon: NX.icons.terminal,
     color: '#4a5568',
+    category: 'Утилиты',
+    description: 'Командная строка системы с 20+ командами.',
     w: 750, h: 500,
     render(body, ctx) {
         let history = [];
         let historyIndex = -1;
-        let currentPath = []; // Текущая директория
+        let currentPath = [];
 
         body.innerHTML = `
             <div class="terminal-app" id="term-container">
@@ -64,9 +66,12 @@ NX.registerApp({
                 print('  neofetch      - Информация о системе');
                 print('  sysinfo       - Подробная информация о системе');
                 print('  uname         - Ядро системы');
-                print('  open [app]    - Запустить приложение (например, open calc)');
+                print('  open [app]    - Запустить приложение');
                 print('  apps          - Список доступных приложений');
                 print('  theme [dark/light] - Сменить тему');
+                print('  wallpaper [1-5]    - Сменить обои');
+                print('  live [snow/rain/stars/aurora/bubbles/none] - Живые обои');
+                print('  battery       - Информация о батарее');
                 print('  history       - История команд');
                 print('  reboot        - Перезагрузка');
                 print('  shutdown      - Выключение');
@@ -128,7 +133,7 @@ NX.registerApp({
                     const idx = node.children.findIndex(c => c.name === args[0]);
                     if (idx !== -1) {
                         const item = node.children.splice(idx, 1)[0];
-                        item.originalPath = currentPath.join('/') || 'Документы'; // fallback
+                        item.originalPath = currentPath.join('/') || 'Документы';
                         NX.state.trash.push(item);
                         NX.saveState();
                         print(`Удалено: ${args[0]}`);
@@ -160,6 +165,9 @@ NX.registerApp({
                 print('  Графика: Nextel Graphics 620');
                 print('  Разрешение: ' + window.innerWidth + 'x' + window.innerHeight);
                 print('  Установлено приложений: ' + NX.state.installed.length);
+                if (NX.battery.supported) {
+                    print('  Батарея: ' + NX.battery.level + '%' + (NX.battery.charging ? ' (заряжается)' : ''));
+                }
             },
             'uname': () => print('Nextel OS 2.0.0 x86_64 Nextel Kernel 2.0'),
             'open': (args) => {
@@ -170,9 +178,10 @@ NX.registerApp({
                 } else print(`Приложение "${args[0]}" не найдено`, 'term-error');
             },
             'apps': () => {
-                print('<span class="term-info">Доступные приложения:</span>');
-                Object.values(NX.apps).forEach(app => {
-                    print(`  ${app.id.padEnd(12)} - ${app.name}`);
+                print('<span class="term-info">Доступные приложения (' + NX.state.installed.length + '):</span>');
+                NX.state.installed.forEach(id => {
+                    const app = NX.apps[id];
+                    if (app) print(`  ${app.id.padEnd(15)} - ${app.name}`);
                 });
             },
             'theme': (args) => {
@@ -182,6 +191,35 @@ NX.registerApp({
                     NX.saveState();
                     print(`Тема изменена на ${args[0]}`);
                 } else print('Использование: theme dark | light', 'term-error');
+            },
+            'wallpaper': (args) => {
+                const idx = parseInt(args[0]);
+                if (idx >= 0 && idx <= 5) {
+                    NX.state.wallpaper = idx;
+                    NX.saveState();
+                    const wallpapers = [
+                        'linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 50%, #e0f2fe 100%)',
+                        'linear-gradient(135deg, #fce7f3 0%, #ede9fe 50%, #e0e7ff 100%)',
+                        'linear-gradient(135deg, #d1fae5 0%, #f3f4f6 50%, #dbeafe 100%)',
+                        'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                        'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                        'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
+                    ];
+                    NX.$('#desktop').style.background = wallpapers[idx];
+                    print(`Обои изменены на ${idx}`);
+                } else print('Использование: wallpaper 0-5', 'term-error');
+            },
+            'live': (args) => {
+                const types = ['none', 'snow', 'rain', 'stars', 'aurora', 'bubbles'];
+                if (types.includes(args[0])) {
+                    NX.liveWallpaper.set(args[0]);
+                    print(`Живые обои: ${args[0]}`);
+                } else print('Использование: live snow|rain|stars|aurora|bubbles|none', 'term-error');
+            },
+            'battery': () => {
+                if (!NX.battery.supported) return print('Информация о батарее недоступна', 'term-error');
+                print(`Батарея: ${NX.battery.level}%`);
+                print(`Статус: ${NX.battery.charging ? 'Заряжается' : 'От батареи'}`);
             },
             'history': () => { history.forEach((cmd, i) => print(`  ${i + 1}  ${NX.esc(cmd)}`)); },
             'reboot': () => NX.boot.reboot(),
@@ -236,6 +274,8 @@ NX.registerApp({
     name: 'Файловый менеджер',
     icon: NX.icons.folder,
     color: '#f5a623',
+    category: 'Утилиты',
+    description: 'Управление файлами и папками.',
     w: 800, h: 550, single: true,
     render(body, ctx) {
         let currentPath = [];
@@ -261,6 +301,9 @@ NX.registerApp({
                     if (!isFolder) {
                         if (item.kind === 'img') icon = NX.icons.fileImg;
                         else if (item.kind === 'ppt') icon = NX.icons.filePpt;
+                        else if (item.kind === 'audio') icon = NX.icons.recorder;
+                        else if (item.kind === 'video') icon = NX.icons.video;
+                        else if (item.kind === 'pdf') icon = NX.icons.pdf;
                         else icon = NX.icons.fileTxt;
                     }
                     return `
@@ -330,10 +373,17 @@ NX.registerApp({
                         render();
                     } else {
                         const file = node.children.find(c => c.name === name);
+                        if (!file) return;
                         if (file.kind === 'txt') NX.openApp('wart', { content: file.content, name: file.name });
                         else if (file.kind === 'img') NX.openApp('point', { content: file.content, name: file.name });
                         else if (file.kind === 'ppt') NX.openApp('powerpaint', { content: file.content, name: file.name });
-                        else NX.notifications.push('Файлы', 'Неизвестный формат файла', 'info');
+                        else if (file.kind === 'audio') {
+                            const audio = new Audio(file.content);
+                            audio.play();
+                            NX.notifications.push('Аудио', `Воспроизведение "${file.name}"`, 'music');
+                        }
+                        else if (file.kind === 'pdf') NX.openApp('pdf');
+                        else NX.notifications.push('Файлы', 'Формат не поддерживается', 'info');
                     }
                 };
             });
@@ -362,12 +412,14 @@ NX.registerApp({
     }
 });
 
-// --- 3. КОРЗИНА (ИСПРАВЛЕНО) ---
+// --- 3. КОРЗИНА ---
 NX.registerApp({
     id: 'trash',
     name: 'Корзина',
     icon: NX.icons.trash,
     color: '#8e8e93',
+    category: 'Система',
+    description: 'Удаленные файлы и приложения.',
     w: 700, h: 500, single: true,
     render(body) {
         const render = () => {
@@ -378,11 +430,11 @@ NX.registerApp({
                 itemsHtml = items.map((item, index) => {
                     let icon = NX.icons.fileTxt;
                     if (item.type === 'folder') icon = NX.icons.folder;
-                    else if (item.type === 'app') icon = NX.icons.device; // Иконка для приложения
+                    else if (item.type === 'app') icon = NX.icons.device;
                     else if (item.kind === 'img') icon = NX.icons.fileImg;
                     else if (item.kind === 'ppt') icon = NX.icons.filePpt;
+                    else if (item.kind === 'audio') icon = NX.icons.recorder;
 
-                    // Определяем, приложение это или файл
                     const isApp = item.type === 'app';
 
                     return `
@@ -433,12 +485,10 @@ NX.registerApp({
                 if (selectedItem === null) return;
                 const item = NX.state.trash.splice(selectedItem, 1)[0];
                 
-                // Если это приложение — восстанавливаем его
                 if (item.type === 'app') {
                     NX.installApp(item.id);
                     NX.notifications.push('Корзина', `Приложение "${item.name}" восстановлено`, 'check');
                 } else {
-                    // Если файл/папка — возвращаем в исходную папку
                     let targetNode = NX.fs.root;
                     if (item.originalPath) {
                         const pathParts = item.originalPath.split('/').filter(Boolean);
@@ -478,6 +528,8 @@ NX.registerApp({
     name: '365 Antivirus',
     icon: NX.icons.antivirus,
     color: '#30b06b',
+    category: 'Система',
+    description: 'Защита от вирусов и угроз.',
     w: 700, h: 550, single: true,
     render(body) {
         let isScanning = false;
@@ -507,7 +559,7 @@ NX.registerApp({
                     <div class="av-actions">
                         <button class="btn primary" id="av-quick" ${isScanning ? 'disabled' : ''}>Быстрая проверка</button>
                         <button class="btn" id="av-full" ${isScanning ? 'disabled' : ''}>Полная проверка</button>
-                        <button class="btn ghost" id="av-update" ${isScanning ? 'disabled' : ''}>${NX.icons.refresh} Обновить базы</button>
+                        <button class="btn ghost" id="av-update" ${isScanning ? 'disabled' : ''}>${NX.icons.refresh} Обновить</button>
                     </div>
 
                     <div class="av-stats-grid">
@@ -517,15 +569,15 @@ NX.registerApp({
                         </div>
                         <div class="av-stat-card">
                             <div class="val">0</div>
-                            <div class="lbl">Угроз найдено</div>
+                            <div class="lbl">Угроз</div>
                         </div>
                         <div class="av-stat-card">
-                            <div class="val">${NX.state.avFilesScanned || '1 248'}</div>
-                            <div class="lbl">Файлов проверено</div>
+                            <div class="val">${NX.state.avFilesScanned || '0'}</div>
+                            <div class="lbl">Файлов</div>
                         </div>
                         <div class="av-stat-card">
-                            <div class="val">${NX.state.avLastScan || 'Сегодня'}</div>
-                            <div class="lbl">Последняя проверка</div>
+                            <div class="val">${NX.state.avLastScan || 'Никогда'}</div>
+                            <div class="lbl">Проверка</div>
                         </div>
                     </div>
                 </div>
@@ -567,7 +619,7 @@ NX.registerApp({
                     
                     NX.notifications.push('365 Antivirus', 'Проверка завершена. Угроз не найдено.', 'check');
                     NX.audio.notify();
-                    render(); // Перерисовываем после завершения
+                    render();
                     return;
                 }
                 
@@ -588,6 +640,8 @@ NX.registerApp({
     name: 'Задачи',
     icon: NX.icons.todo,
     color: '#ff9f0a',
+    category: 'Программы',
+    description: 'Список задач и планов.',
     w: 500, h: 600,
     render(body) {
         if (!NX.state.tasks) NX.state.tasks = [{ id: 1, text: 'Изучить Nextel OS', done: false }];
@@ -660,69 +714,98 @@ NX.registerApp({
     }
 });
 
-// --- 6. ЗАМЕТКИ ---
+// --- 6. ЗАМЕТКИ (С ШИФРОВАНИЕМ) ---
 NX.registerApp({
     id: 'notes',
     name: 'Заметки',
     icon: NX.icons.notes,
     color: '#e8c65a',
+    category: 'Программы',
+    description: 'Заметки с шифрованием AES-256.',
     w: 750, h: 550,
     render(body) {
-        if (!NX.state.notes) NX.state.notes = [{ id: 1, title: 'Добро пожаловать', content: 'Это ваша первая заметка в Nextel OS.', date: new Date().toISOString() }];
+        if (!NX.state.notes) NX.state.notes = [{ id: 1, title: 'Добро пожаловать', content: 'Это ваша первая заметка в Nextel OS.', date: new Date().toISOString(), encrypted: false }];
         let currentNoteId = NX.state.notes.length > 0 ? NX.state.notes[0].id : null;
+        let unlockedNotes = {}; // Кэш расшифрованных заметок: { id: content }
 
         const render = () => {
             const notes = NX.state.notes;
             const activeNote = notes.find(n => n.id === currentNoteId);
+            const isUnlocked = activeNote && (!activeNote.encrypted || unlockedNotes[activeNote.id] !== undefined);
+            const displayContent = activeNote ? (activeNote.encrypted ? (unlockedNotes[activeNote.id] || '') : activeNote.content) : '';
 
-            let listHtml = notes.map(n => `
-                <div class="note-item ${n.id === currentNoteId ? 'active' : ''}" data-id="${n.id}">
-                    <div class="n-title">${NX.esc(n.title || 'Без названия')}</div>
-                    <div class="n-prev">${NX.esc(n.content.slice(0, 30) || 'Пустая заметка...')}</div>
-                </div>
-            `).join('');
+            let listHtml = notes.map(n => {
+                const preview = n.encrypted ? '🔒 Зашифровано' : (n.content || '').slice(0, 30);
+                return `
+                    <div class="note-item ${n.id === currentNoteId ? 'active' : ''}" data-id="${n.id}">
+                        <div class="n-title">
+                            ${NX.esc(n.title || 'Без названия')}
+                            ${n.encrypted ? '<span class="encrypted-badge">🔒</span>' : ''}
+                        </div>
+                        <div class="n-prev">${NX.esc(preview)}</div>
+                    </div>
+                `;
+            }).join('');
 
             body.innerHTML = `
                 <div class="notes-app">
                     <div class="notes-sidebar">
                         <div style="padding:12px;">
-                            <button class="btn primary" id="note-new" style="width:100%;">${NX.icons.x} Новая заметка</button>
+                            <button class="btn primary" id="note-new" style="width:100%;">+ Новая заметка</button>
                         </div>
                         <div class="notes-list">
                             ${listHtml}
                         </div>
                     </div>
                     <div class="notes-editor">
-                        ${activeNote ? `
-                            <input type="text" id="note-title" value="${NX.esc(activeNote.title)}" placeholder="Заголовок">
-                            <textarea id="note-content" placeholder="Текст заметки...">${NX.esc(activeNote.content)}</textarea>
+                        ${activeNote ? (isUnlocked ? `
+                            <div style="padding:16px 24px 0;display:flex;gap:8px;align-items:center;justify-content:space-between;">
+                                <input type="text" id="note-title" value="${NX.esc(activeNote.title)}" placeholder="Заголовок" style="flex:1;font-size:24px;font-weight:700;border:none;outline:none;background:transparent;color:var(--text);">
+                                ${activeNote.encrypted 
+                                    ? `<button class="btn ghost" id="note-unlock" style="color:var(--warning);">${NX.icons.lock} Зашифровано</button>`
+                                    : `<button class="btn ghost" id="note-encrypt" style="color:var(--accent);">${NX.icons.lock} Зашифровать</button>`
+                                }
+                                <button class="btn ghost" id="note-delete" style="color:var(--danger);">${NX.icons.trash}</button>
+                            </div>
+                            <textarea id="note-content" placeholder="Текст заметки..." style="flex:1;padding:16px 24px;border:none;outline:none;resize:none;font:inherit;font-size:14px;line-height:1.6;background:transparent;color:var(--text);">${NX.esc(displayContent)}</textarea>
                         ` : `
+                            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:20px;padding:40px;">
+                                <div style="font-size:64px;">🔒</div>
+                                <div style="font-size:18px;font-weight:600;">Заметка зашифрована</div>
+                                <div style="font-size:13px;color:var(--text-muted);">Введите пароль для просмотра</div>
+                                <input type="password" id="unlock-password" class="input" placeholder="Пароль" style="width:280px;">
+                                <button class="btn primary" id="unlock-btn" style="width:280px;justify-content:center;">Разблокировать</button>
+                                <button class="btn ghost" id="note-delete-locked" style="color:var(--danger);">${NX.icons.trash} Удалить заметку</button>
+                            </div>
+                        `) : `
                             <div class="np-empty" style="margin-top:100px;">Выберите заметку или создайте новую</div>
                         `}
                     </div>
                 </div>
             `;
 
+            // Выбор заметки
             NX.$$('.note-item', body).forEach(el => {
                 el.onclick = () => { currentNoteId = parseInt(el.dataset.id); render(); };
             });
 
+            // Создание
             NX.$('#note-new', body).onclick = () => {
-                const newNote = { id: Date.now(), title: 'Новая заметка', content: '', date: new Date().toISOString() };
+                const newNote = { id: Date.now(), title: 'Новая заметка', content: '', date: new Date().toISOString(), encrypted: false };
                 NX.state.notes.unshift(newNote);
                 currentNoteId = newNote.id;
                 NX.saveState();
                 render();
-                setTimeout(() => NX.$('#note-title', body).focus(), 100);
+                setTimeout(() => { const t = NX.$('#note-title', body); if (t) t.focus(); }, 100);
             };
 
-            if (activeNote) {
+            if (activeNote && isUnlocked) {
                 const titleInput = NX.$('#note-title', body);
                 const contentInput = NX.$('#note-content', body);
 
                 const saveNote = () => {
                     activeNote.title = titleInput.value;
-                    activeNote.content = contentInput.value;
+                    if (!activeNote.encrypted) activeNote.content = contentInput.value;
                     activeNote.date = new Date().toISOString();
                     NX.saveState();
                     
@@ -730,14 +813,81 @@ NX.registerApp({
                     window._noteSaveTimer = setTimeout(() => {
                         const listItem = body.querySelector(`.note-item[data-id="${activeNote.id}"]`);
                         if (listItem) {
-                            listItem.querySelector('.n-title').textContent = activeNote.title || 'Без названия';
-                            listItem.querySelector('.n-prev').textContent = activeNote.content.slice(0, 30) || 'Пустая заметка...';
+                            listItem.querySelector('.n-title').innerHTML = `${NX.esc(activeNote.title || 'Без названия')}${activeNote.encrypted ? '<span class="encrypted-badge">🔒</span>' : ''}`;
+                            listItem.querySelector('.n-prev').textContent = activeNote.encrypted ? '🔒 Зашифровано' : (activeNote.content.slice(0, 30) || 'Пустая заметка...');
                         }
                     }, 300);
                 };
 
                 titleInput.oninput = saveNote;
                 contentInput.oninput = saveNote;
+
+                // Шифрование
+                const encryptBtn = NX.$('#note-encrypt', body);
+                if (encryptBtn) {
+                    encryptBtn.onclick = async () => {
+                        const password = prompt('Введите пароль для шифрования:');
+                        if (!password || password.length < 3) {
+                            NX.notifications.push('Заметки', 'Пароль должен быть не менее 3 символов', 'info');
+                            return;
+                        }
+                        try {
+                            const encrypted = await NX.crypto.encrypt(contentInput.value, password);
+                            activeNote.content = encrypted;
+                            activeNote.encrypted = true;
+                            unlockedNotes[activeNote.id] = contentInput.value;
+                            NX.saveState();
+                            NX.notifications.push('Заметки', 'Заметка зашифрована', 'lock');
+                            NX.audio.notify();
+                            render();
+                        } catch (e) {
+                            NX.notifications.push('Заметки', 'Ошибка шифрования: ' + e.message, 'info');
+                        }
+                    };
+                }
+
+                // Удаление
+                NX.$('#note-delete', body).onclick = () => {
+                    if (confirm('Удалить заметку?')) {
+                        NX.state.notes = NX.state.notes.filter(n => n.id !== activeNote.id);
+                        delete unlockedNotes[activeNote.id];
+                        currentNoteId = NX.state.notes.length > 0 ? NX.state.notes[0].id : null;
+                        NX.saveState();
+                        render();
+                    }
+                };
+            }
+
+            // Разблокировка
+            const unlockBtn = NX.$('#unlock-btn', body);
+            if (unlockBtn && activeNote) {
+                unlockBtn.onclick = async () => {
+                    const password = NX.$('#unlock-password', body).value;
+                    try {
+                        const decrypted = await NX.crypto.decrypt(activeNote.content, password);
+                        unlockedNotes[activeNote.id] = decrypted;
+                        NX.notifications.push('Заметки', 'Заметка расшифрована', 'check');
+                        render();
+                    } catch (e) {
+                        NX.notifications.push('Заметки', 'Неверный пароль', 'info');
+                    }
+                };
+                NX.$('#unlock-password', body).onkeydown = (e) => {
+                    if (e.key === 'Enter') unlockBtn.click();
+                };
+            }
+
+            // Удаление зашифрованной
+            const delLocked = NX.$('#note-delete-locked', body);
+            if (delLocked && activeNote) {
+                delLocked.onclick = () => {
+                    if (confirm('Удалить зашифрованную заметку без возможности восстановления?')) {
+                        NX.state.notes = NX.state.notes.filter(n => n.id !== activeNote.id);
+                        currentNoteId = NX.state.notes.length > 0 ? NX.state.notes[0].id : null;
+                        NX.saveState();
+                        render();
+                    }
+                };
             }
         };
 
@@ -745,17 +895,20 @@ NX.registerApp({
     }
 });
 
-// --- 7. НАСТРОЙКИ (SETTINGS) ---
+// --- 7. НАСТРОЙКИ ---
 NX.registerApp({
     id: 'settings',
     name: 'Настройки',
     icon: NX.icons.device,
     color: '#6e6e73',
+    category: 'Система',
+    description: 'Персонализация и настройка системы.',
     w: 850, h: 650, single: true,
     render(body) {
         let currentTab = 'system';
 
         const render = () => {
+            const bat = NX.battery;
             let contentHtml = '';
 
             // --- Система ---
@@ -772,7 +925,7 @@ NX.registerApp({
                     </div>
                     <h3>Сброс</h3>
                     <div class="card">
-                        <div class="row"><span>Сбросить настройки</span><button class="btn" id="btn-reset">Сбросить</button></div>
+                        <div class="row"><span>Сбросить все настройки</span><button class="btn" id="btn-reset" style="color:var(--danger);">Сбросить</button></div>
                     </div>
                 `;
             } 
@@ -783,7 +936,16 @@ NX.registerApp({
                     'linear-gradient(135deg, #fce7f3 0%, #ede9fe 50%, #e0e7ff 100%)',
                     'linear-gradient(135deg, #d1fae5 0%, #f3f4f6 50%, #dbeafe 100%)',
                     'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                    'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+                    'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                    'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
+                ];
+                const liveTypes = [
+                    { id: 'none', name: 'Нет' },
+                    { id: 'snow', name: 'Снег' },
+                    { id: 'rain', name: 'Дождь' },
+                    { id: 'stars', name: 'Звёзды' },
+                    { id: 'aurora', name: 'Аврора' },
+                    { id: 'bubbles', name: 'Пузырьки' }
                 ];
 
                 contentHtml = `
@@ -801,6 +963,13 @@ NX.registerApp({
                             <div class="wallpaper-item ${NX.state.wallpaper === i ? 'active' : ''}" data-wall="${i}" style="background: ${w};"></div>
                         `).join('')}
                     </div>
+                    <h3>Живые обои</h3>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                        ${liveTypes.map(t => `
+                            <button class="btn ${NX.state.liveWallpaper === t.id ? 'primary' : 'ghost'}" data-live="${t.id}">${t.name}</button>
+                        `).join('')}
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);">Живые обои анимированы на canvas, реагируют на мышь (параллакс).</div>
                 `;
             }
             // --- Звук ---
@@ -827,21 +996,63 @@ NX.registerApp({
                     </div>
                 `;
             }
+            // --- Батарея ---
+            else if (currentTab === 'battery') {
+                contentHtml = `
+                    <h2>Батарея</h2>
+                    ${bat.supported ? `
+                        <div class="card">
+                            <div class="row"><span>Уровень заряда</span><span style="font-size:24px;font-weight:700;color:${bat.level < 20 ? 'var(--danger)' : 'var(--success)'};">${bat.level}%</span></div>
+                            <div class="row"><span>Статус</span><span>${bat.charging ? '⚡ Заряжается' : 'От батареи'}</span></div>
+                            <div class="row"><span>Источник</span><span>${bat.charging ? 'Сеть' : 'Батарея'}</span></div>
+                        </div>
+                        <div style="margin-top:20px;">
+                            <div style="height:20px;background:var(--surface-3);border-radius:10px;overflow:hidden;">
+                                <div style="height:100%;width:${bat.level}%;background:${bat.level < 20 ? 'var(--danger)' : bat.level < 50 ? 'var(--warning)' : 'var(--success)'};transition:width 0.3s;"></div>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="card" style="padding:40px;text-align:center;">
+                            <div style="font-size:48px;margin-bottom:16px;">🔋</div>
+                            <div style="font-size:16px;">API батареи недоступно</div>
+                            <div style="font-size:12px;color:var(--text-muted);margin-top:8px;">Ваш браузер не поддерживает navigator.getBattery()</div>
+                        </div>
+                    `}
+                `;
+            }
             // --- Приложения ---
             else if (currentTab === 'apps') {
                 const apps = NX.state.installed.map(id => NX.apps[id]).filter(Boolean);
                 contentHtml = `
-                    <h2>Приложения</h2>
-                    <div class="card">
+                    <h2>Приложения (${apps.length})</h2>
+                    <div class="card" style="max-height:400px;overflow-y:auto;">
                         ${apps.map(app => `
                             <div class="row">
                                 <span style="display:flex;align-items:center;gap:10px;">
                                     <span style="color:${app.color}">${app.icon}</span>
                                     ${NX.esc(app.name)}
                                 </span>
-                                <button class="btn ghost" data-uninstall="${app.id}" style="color:var(--danger);padding:0 10px;">Удалить</button>
+                                <button class="btn ghost" data-uninstall="${app.id}" style="color:var(--danger);padding:0 10px;font-size:11px;">Удалить</button>
                             </div>
                         `).join('')}
+                    </div>
+                `;
+            }
+            // --- О системе ---
+            else if (currentTab === 'about') {
+                contentHtml = `
+                    <h2>О системе</h2>
+                    <div style="text-align:center;padding:20px;">
+                        <div style="width:80px;height:80px;margin:0 auto 16px;color:var(--accent);">${NX.icons.logo}</div>
+                        <div style="font-size:24px;font-weight:700;margin-bottom:8px;">Nextel OS</div>
+                        <div style="font-size:14px;color:var(--text-muted);margin-bottom:24px;">Версия 2.0.0</div>
+                    </div>
+                    <div class="card">
+                        <div class="row"><span>Версия</span><span>2.0.0</span></div>
+                        <div class="row"><span>Сборка</span><span>2026</span></div>
+                        <div class="row"><span>Канал</span><span>Стабильный</span></div>
+                        <div class="row"><span>Разработчик</span><span>Nextel Corporation</span></div>
+                        <div class="row"><span>Приложений</span><span>${NX.state.installed.length}</span></div>
                     </div>
                 `;
             }
@@ -859,10 +1070,16 @@ NX.registerApp({
                             ${NX.icons.music} Звук
                         </div>
                         <div class="settings-nav ${currentTab === 'display' ? 'active' : ''}" data-tab="display">
-                            ${NX.icons.monitor || NX.icons.device} Дисплей
+                            ${NX.icons.monitor} Дисплей
+                        </div>
+                        <div class="settings-nav ${currentTab === 'battery' ? 'active' : ''}" data-tab="battery">
+                            ${NX.icons.battery} Батарея
                         </div>
                         <div class="settings-nav ${currentTab === 'apps' ? 'active' : ''}" data-tab="apps">
                             ${NX.icons.market} Приложения
+                        </div>
+                        <div class="settings-nav ${currentTab === 'about' ? 'active' : ''}" data-tab="about">
+                            ${NX.icons.info} О системе
                         </div>
                     </div>
                     <div class="settings-main">
@@ -871,15 +1088,16 @@ NX.registerApp({
                 </div>
             `;
 
-            // Навигация по вкладкам
+            // Навигация
             NX.$$('.settings-nav', body).forEach(nav => {
                 nav.onclick = () => { currentTab = nav.dataset.tab; render(); };
             });
 
-            // Обработчики для конкретных вкладок
+            // Обработчики
             if (currentTab === 'system') {
                 NX.$('#btn-reset', body).onclick = () => {
-                    if (confirm('Сбросить все настройки и файлы? Система перезагрузится.')) {
+                    if (confirm('Сбросить ВСЕ настройки и файлы? Система перезагрузится.')) {
+                        localStorage.removeItem('nx_state_v3');
                         localStorage.removeItem('nx_state_v2');
                         location.reload();
                     }
@@ -898,24 +1116,31 @@ NX.registerApp({
                     w.onclick = () => {
                         NX.state.wallpaper = parseInt(w.dataset.wall);
                         NX.saveState();
-                        // Применяем обои к рабочему столу
                         const wallpapers = [
                             'linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 50%, #e0f2fe 100%)',
                             'linear-gradient(135deg, #fce7f3 0%, #ede9fe 50%, #e0e7ff 100%)',
                             'linear-gradient(135deg, #d1fae5 0%, #f3f4f6 50%, #dbeafe 100%)',
                             'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                            'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+                            'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                            'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)'
                         ];
-                        NX.$('#desktop').style.background = wallpapers[NX.state.wallpaper] || wallpapers[0];
+                        NX.$('#desktop').style.background = wallpapers[NX.state.wallpaper];
                         NX.$$('.wallpaper-item', body).forEach(x => x.classList.remove('active'));
                         w.classList.add('active');
+                    };
+                });
+
+                NX.$$('[data-live]', body).forEach(btn => {
+                    btn.onclick = () => {
+                        NX.liveWallpaper.set(btn.dataset.live);
+                        render();
                     };
                 });
             }
 
             if (currentTab === 'sound') {
                 const slider = NX.$('#set-volume', body);
-                slider.oninput = (e) => {
+                if (slider) slider.oninput = (e) => {
                     NX.state.volume = e.target.value;
                     NX.saveState();
                 };
@@ -923,7 +1148,7 @@ NX.registerApp({
 
             if (currentTab === 'display') {
                 const slider = NX.$('#set-brightness', body);
-                slider.oninput = (e) => {
+                if (slider) slider.oninput = (e) => {
                     NX.state.brightness = e.target.value;
                     NX.$('#desktop').style.filter = `brightness(${e.target.value}%)`;
                     NX.saveState();
@@ -933,9 +1158,8 @@ NX.registerApp({
             if (currentTab === 'apps') {
                 NX.$$('[data-uninstall]', body).forEach(btn => {
                     btn.onclick = () => {
-                        const id = btn.dataset.uninstall;
-                        NX.uninstallApp(id);
-                        render(); // Обновить список
+                        NX.uninstallApp(btn.dataset.uninstall);
+                        render();
                     };
                 });
             }
