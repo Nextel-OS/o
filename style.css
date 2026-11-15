@@ -1,15 +1,15 @@
 /* ============================================================
-   NEXTEL OS 2.0 — ГЛОБАЛЬНЫЕ СТИЛИ (ОБНОВЛЕНО)
+   NEXTEL OS 2.0 — ГЛОБАЛЬНЫЕ СТИЛИ v3.0
+   Светлая тема (чёрный текст) · Лок-скрин · Панель Алевтины
    ============================================================ */
 
 :root {
-    /* Светлая тема — всё на чёрном тексте */
     --bg: #f3f4f6;
     --surface: #ffffff;
     --surface-2: #f9fafb;
     --surface-3: #e5e7eb;
-    --text: #000000;            /* ОБНОВЛЕНО: строго чёрный */
-    --text-muted: #4b5563;      /* ОБНОВЛЕНО: темнее для контраста */
+    --text: #000000;
+    --text-muted: #4b5563;
     --border: #d1d5db;
     --accent: #0a84ff;
     --accent-hover: #0071e3;
@@ -17,19 +17,19 @@
     --danger: #ef4444;
     --success: #10b981;
     --warning: #f59e0b;
-
+    
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
     --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
     --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.15);
-
+    
     --radius-sm: 6px;
     --radius: 10px;
     --radius-lg: 16px;
-
+    
     --wallpaper: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 50%, #e0f2fe 100%);
-    --taskbar-bg: rgba(255, 255, 255, 0.75);
-    --menu-bg: rgba(255, 255, 255, 0.9);
+    --taskbar-bg: rgba(255, 255, 255, 0.85);
+    --menu-bg: rgba(255, 255, 255, 0.92);
 }
 
 body.dark-theme {
@@ -43,11 +43,11 @@ body.dark-theme {
     --accent: #3b82f6;
     --accent-hover: #60a5fa;
     --accent-soft: rgba(59, 130, 246, 0.2);
-
+    
     --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.5);
     --wallpaper: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
     --taskbar-bg: rgba(15, 23, 42, 0.85);
-    --menu-bg: rgba(30, 41, 59, 0.9);
+    --menu-bg: rgba(30, 41, 59, 0.92);
 }
 
 * {
@@ -102,7 +102,7 @@ input, textarea { font: inherit; color: inherit; outline: none; user-select: tex
 @keyframes pulse { 0% { opacity: 0.8; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1); } 100% { opacity: 0.8; transform: scale(0.98); } }
 
 /* ============================================================
-   ЛОК-СКРИН (ОБНОВЛЕНО: без аватарки, без кнопок, со стрелкой)
+   ЛОК-СКРИН (новый — со стрелкой, без PIN/аватарки)
    ============================================================ */
 
 #lock-screen {
@@ -165,7 +165,6 @@ input, textarea { font: inherit; color: inherit; outline: none; user-select: tex
     text-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
-/* Новая большая кнопка входа (только стрелка) */
 .lock-enter-btn {
     width: 72px;
     height: 72px;
@@ -201,16 +200,14 @@ input, textarea { font: inherit; color: inherit; outline: none; user-select: tex
     transform: translateX(4px);
 }
 
-.lock-enter-btn:active {
-    transform: scale(0.95);
-}
+.lock-enter-btn:active { transform: scale(0.95); }
 
 @keyframes lockPulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.3); }
     50% { box-shadow: 0 0 0 20px rgba(255,255,255,0); }
 }
 
-/* Экран питания */
+/* Экраны питания */
 #power-off-screen, #reboot-screen {
     position: fixed;
     inset: 0;
@@ -229,11 +226,11 @@ input, textarea { font: inherit; color: inherit; outline: none; user-select: tex
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ============================================================
-   ЖИВЫЕ ОБОИ (canvas поверх фона)
+   ЖИВЫЕ ОБОИ
    ============================================================ */
 
 #live-wallpaper-canvas {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
@@ -241,7 +238,7 @@ input, textarea { font: inherit; color: inherit; outline: none; user-select: tex
 }
 
 /* ============================================================
-   РАБОЧИЙ СТОЛ И ИКОНКИ
+   РАБОЧИЙ СТОЛ
    ============================================================ */
 
 #desktop {
@@ -284,7 +281,6 @@ body.dark-theme .desktop-icon .label { text-shadow: 0 1px 3px rgba(0,0,0,0.8); c
 body.dark-theme .desktop-icon:hover { background: rgba(255,255,255,0.1); }
 .desktop-icon.selected { background: var(--accent-soft); border-color: var(--accent); }
 .desktop-icon.selected .label { color: var(--accent); }
-
 .desktop-icon.dragging { opacity: 0.4; }
 .desktop-icon.drag-over { background: var(--accent-soft); border-color: var(--accent); }
 
@@ -298,16 +294,12 @@ body.dark-theme .desktop-icon:hover { background: rgba(255,255,255,0.1); }
     z-index: 10;
 }
 
-/* Виджеты */
+/* Виджеты (position: fixed в JS) */
 #widgets-container {
     position: absolute;
-    right: 20px;
-    top: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    z-index: 2;
+    inset: 0;
     pointer-events: none;
+    z-index: 2;
 }
 
 .widget {
@@ -319,15 +311,11 @@ body.dark-theme .desktop-icon:hover { background: rgba(255,255,255,0.1); }
     border-radius: var(--radius-lg);
     padding: 16px;
     box-shadow: var(--shadow-glass);
-    cursor: grab;
-    user-select: none;
     width: 260px;
-    position: absolute;
-    right: 20px;
-    transition: box-shadow 0.2s, transform 0.1s;
+    transition: box-shadow 0.2s;
 }
 body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
-.widget:active { cursor: grabbing; box-shadow: var(--shadow-lg); transform: scale(1.02); }
+.widget:hover { box-shadow: var(--shadow-lg); }
 .widget-header { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
 
 /* ============================================================
@@ -422,7 +410,8 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 .task-btn.active { background: var(--surface-3); color: var(--text); border-bottom-color: var(--accent); }
 
 #system-tray { display: flex; align-items: center; gap: 12px; padding: 0 8px; }
-.tray-icons { display: flex; gap: 4px; }
+.tray-icons { display: flex; gap: 4px; align-items: center; }
+#tray-battery { display: flex; align-items: center; }
 #tray-notifications, #tray-quick-settings { width: 32px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; color: var(--text); }
 #tray-notifications:hover, #tray-quick-settings:hover { background: var(--surface-3); }
 #tray-notifications svg, #tray-quick-settings svg { width: 18px; height: 18px; }
@@ -433,7 +422,7 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 #tray-show-desktop:hover { border-left-color: var(--accent); }
 
 /* ============================================================
-   МЕНЮ ПУСК (ОБНОВЛЕНО: увеличены кнопки выключения)
+   МЕНЮ ПУСК (с увеличенными кнопками питания)
    ============================================================ */
 
 #start-menu {
@@ -465,7 +454,6 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 .sm-app span { font-size: 11px; text-align: center; line-height: 1.2; font-weight: 500; color: var(--text); }
 .sm-footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; gap: 12px; align-items: center; justify-content: flex-end; }
 
-/* ОБНОВЛЕНО: увеличенные кнопки выключения в меню Пуск */
 .sm-footer .power-big-btn {
     height: 44px;
     padding: 0 20px;
@@ -627,7 +615,7 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 .tv-preview svg { width: 48px; height: 48px; opacity: 0.3; }
 
 /* ============================================================
-   УВЕДОМЛЕНИЯ (TOASTS)
+   ТОСТЫ (УВЕДОМЛЕНИЯ)
    ============================================================ */
 
 #toast-container { position: fixed; right: 20px; bottom: 68px; z-index: 8500; display: flex; flex-direction: column; gap: 10px; }
@@ -656,33 +644,55 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 .cb-item .cb-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
 
 /* ============================================================
-   ПАНЕЛЬ АЛЕВТИНЫ (справа, привязанная)
+   ПАНЕЛЬ АЛЕВТИНЫ (справа, 20% ширины, ресайзер)
    ============================================================ */
 
 #alevtina-panel {
     position: fixed;
-    right: -420px;
     top: 0;
+    right: -100%;
     bottom: 48px;
-    width: 400px;
+    width: 20%;
+    min-width: 320px;
+    max-width: 60%;
     background: var(--menu-bg);
-    backdrop-filter: blur(24px);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
     border-left: 1px solid var(--border);
-    box-shadow: -8px 0 32px rgba(0,0,0,0.15);
+    box-shadow: -8px 0 32px rgba(0, 0, 0, 0.15);
     z-index: 4500;
     display: flex;
     flex-direction: column;
-    transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 #alevtina-panel.open { right: 0; }
 
+/* Ресайзер слева */
+.av-resize {
+    position: absolute;
+    left: -4px;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: ew-resize;
+    background: transparent;
+    transition: background 0.15s;
+    z-index: 1;
+}
+.av-resize:hover { background: var(--accent-soft); }
+
+/* Шапка панели */
 .av-header {
-    padding: 16px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     gap: 12px;
+    flex: none;
 }
+
+/* Аватар-кружок */
 .av-avatar {
     width: 40px;
     height: 40px;
@@ -692,62 +702,253 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
     align-items: center;
     justify-content: center;
     color: #fff;
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 17px;
+    font-weight: 700;
+    flex: none;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+    transition: box-shadow 0.3s;
 }
-.av-name { font-weight: 600; font-size: 14px; }
-.av-status { font-size: 11px; color: var(--text-muted); }
-.av-close { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--text-muted); cursor: pointer; }
-.av-close:hover { background: var(--surface-3); }
 
+.av-avatar.speaking {
+    animation: avSpeak 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes avSpeak {
+    0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.6); transform: scale(1); }
+    100% { box-shadow: 0 0 0 12px rgba(102, 126, 234, 0); transform: scale(1.05); }
+}
+
+.av-name {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.av-status {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Кружок статуса (как в Гигачате) */
+.av-status::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background 0.3s, box-shadow 0.3s;
+}
+
+.av-status.listening::before {
+    background: var(--danger);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+    animation: avListening 1.2s ease-in-out infinite;
+}
+
+.av-status.awake::before {
+    background: var(--success);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6);
+    animation: avAwake 0.6s ease-in-out infinite;
+}
+
+@keyframes avListening {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+@keyframes avAwake {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); transform: scale(1); }
+    50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); transform: scale(1.15); }
+}
+
+.av-close {
+    margin-left: auto;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.av-close:hover { background: var(--surface-3); color: var(--text); }
+
+/* Чат */
 .av-chat {
     flex: 1;
     overflow-y: auto;
     padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
+    min-height: 0;
 }
-.av-msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.5; }
-.av-msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
-.av-msg.assistant { align-self: flex-start; background: var(--surface-2); color: var(--text); border-bottom-left-radius: 4px; }
-.av-msg.typing::after { content: '...'; animation: dots 1.5s infinite; }
-@keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60%, 100% { content: '...'; } }
 
+.av-msg {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.av-msg.user {
+    align-self: flex-end;
+    background: var(--accent);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.av-msg.assistant {
+    align-self: flex-start;
+    background: var(--surface-2);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+    border: 1px solid var(--border);
+}
+
+.av-msg.typing {
+    align-self: flex-start;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.av-msg.typing::after {
+    content: '...';
+    display: inline-block;
+    animation: avDots 1.5s infinite;
+}
+
+@keyframes avDots {
+    0%, 20% { content: '.'; }
+    40% { content: '..'; }
+    60%, 100% { content: '...'; }
+}
+
+/* Поле ввода */
 .av-input-row {
     padding: 12px;
     border-top: 1px solid var(--border);
     display: flex;
     gap: 8px;
     align-items: center;
+    flex: none;
+    background: var(--surface);
 }
+
 .av-input-row input {
     flex: 1;
-    height: 36px;
-    border-radius: 18px;
+    height: 38px;
+    border-radius: 19px;
     border: 1px solid var(--border);
-    background: var(--surface);
+    background: var(--surface-2);
     padding: 0 14px;
     font-size: 13px;
     color: var(--text);
+    outline: none;
+    transition: border 0.15s, box-shadow 0.15s;
 }
-.av-input-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-.av-mic-btn, .av-send-btn {
-    width: 36px;
-    height: 36px;
+
+.av-input-row input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* Кнопка микрофона */
+.av-mic-btn {
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: var(--surface-3);
+    color: var(--text);
     cursor: pointer;
     transition: all 0.15s;
     flex: none;
+    position: relative;
 }
-.av-mic-btn { background: var(--surface-3); color: var(--text); }
-.av-mic-btn.recording { background: var(--danger); color: #fff; animation: micPulse 1s infinite; }
-@keyframes micPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } }
-.av-send-btn { background: var(--accent); color: #fff; }
-.av-mic-btn svg, .av-send-btn svg { width: 18px; height: 18px; }
+
+.av-mic-btn:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+.av-mic-btn svg {
+    width: 18px;
+    height: 18px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Микрофон активен — пульсация */
+.av-mic-btn.listening {
+    background: var(--danger);
+    color: #fff;
+    animation: avMicPulse 1.2s ease-in-out infinite;
+}
+
+.av-mic-btn.listening::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--danger);
+    animation: avMicRing 1.2s ease-in-out infinite;
+}
+
+.av-mic-btn.listening svg {
+    animation: avMicShake 0.5s ease-in-out infinite;
+}
+
+@keyframes avMicPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}
+
+@keyframes avMicRing {
+    0% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes avMicShake {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-8deg); }
+    75% { transform: rotate(8deg); }
+}
+
+/* Кнопка отправки */
+.av-send-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex: none;
+    font-size: 16px;
+}
+
+.av-send-btn:hover {
+    background: var(--accent-hover);
+    transform: scale(1.05);
+}
+
+.av-send-btn:active {
+    transform: scale(0.95);
+}
 
 /* ============================================================
    БАЗОВЫЕ ЭЛЕМЕНТЫ
@@ -777,16 +978,15 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 .card .row .label { color: var(--text-muted); }
 .card .row .value { font-weight: 500; }
 
-.switch { width: 44px; height: 24px; border-radius: 12px; background: var(--surface-3); position: relative; cursor: pointer; border: 1px solid var(--border); transition: background 0.2s; }
+.switch { width: 44px; height: 24px; border-radius: 12px; background: var(--surface-3); position: relative; cursor: pointer; border: 1px solid var(--border); transition: background 0.2s; flex: none; }
 .switch::after { content: ''; position: absolute; left: 2px; top: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s; }
 .switch.on { background: var(--accent); border-color: var(--accent); }
 .switch.on::after { transform: translateX(20px); }
 
 /* ============================================================
-   ПРИЛОЖЕНИЯ (все сохранены)
+   ПРИЛОЖЕНИЯ: КАЛЬКУЛЯТОР
    ============================================================ */
 
-/* Калькулятор */
 .calc-app { display: flex; flex-direction: column; height: 100%; background: var(--surface-2); }
 .calc-display { padding: 24px 20px; text-align: right; flex: none; display: flex; flex-direction: column; gap: 4px; }
 .calc-prev { font-size: 16px; color: var(--text-muted); height: 20px; }
@@ -886,7 +1086,6 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 .file-item svg { width: 40px; height: 40px; }
 .file-item span { font-size: 12px; text-align: center; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-/* Значок удаления поверх файла (для картинок/записей) */
 .file-item .delete-badge,
 .gal-thumb .delete-badge {
     position: absolute;
@@ -906,9 +1105,9 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 }
 .file-item:hover .delete-badge,
 .gal-thumb:hover .delete-badge { display: flex; }
-.file-item .delete-badge:hover { background: var(--danger); }
+.file-item .delete-badge:hover,
+.gal-thumb .delete-badge:hover { background: var(--danger); }
 
-/* Значок шифрования на карточке заметки */
 .encrypted-badge {
     display: inline-flex;
     align-items: center;
@@ -929,7 +1128,7 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 .market-tabs { display: flex; gap: 8px; padding: 16px 24px; border-bottom: 1px solid var(--border); flex: none; overflow-x: auto; }
 .market-tab { padding: 6px 16px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); font-size: 13px; cursor: pointer; white-space: nowrap; }
 .market-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-.market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; padding: 24px; overflow-y: auto; flex: 1; }
+.market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; padding: 24px; }
 .market-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: transform 0.15s, box-shadow 0.15s; }
 .market-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 .market-card .app-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
@@ -954,18 +1153,11 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 .wallpaper-item { height: 80px; border-radius: var(--radius); cursor: pointer; border: 3px solid transparent; transition: border 0.1s; background-size: cover; background-position: center; }
 .wallpaper-item:hover { border-color: var(--border); }
 .wallpaper-item.active { border-color: var(--accent); }
-.accent-grid { display: flex; gap: 12px; flex-wrap: wrap; }
-.accent-color { width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-shadow: 0 0 0 1px var(--border) inset; }
-.accent-color.active { border-color: var(--surface); box-shadow: 0 0 0 2px var(--accent); }
 
 /* Антивирус */
 .av-app { display: flex; flex-direction: column; height: 100%; padding: 40px; align-items: center; text-align: center; }
 .av-shield { width: 160px; height: 160px; position: relative; margin-bottom: 24px; }
 .av-shield svg { width: 100%; height: 100%; }
-.av-shield .progress-ring { position: absolute; inset: 0; transform: rotate(-90deg); }
-.av-shield .progress-ring circle { fill: none; stroke-width: 8; stroke-linecap: round; }
-.av-shield .progress-ring .bg { stroke: var(--surface-3); }
-.av-shield .progress-ring .fg { stroke: var(--success); stroke-dasharray: 440; stroke-dashoffset: 0; transition: stroke-dashoffset 0.3s ease; }
 .av-status-text { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
 .av-sub-text { font-size: 14px; color: var(--text-muted); margin-bottom: 32px; }
 .av-actions { display: flex; gap: 12px; margin-bottom: 40px; }
@@ -1003,7 +1195,6 @@ body.dark-theme .widget { border-color: rgba(255,255,255,0.1); }
 .game-header span { color: var(--accent); }
 canvas.game-canvas { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); }
 
-/* 2048 */
 .g2048-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: var(--border); padding: 10px; border-radius: var(--radius); width: 340px; height: 340px; }
 .g2048-cell { background: var(--surface-2); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; color: var(--text); transition: all 0.15s ease-out; }
 .g2048-cell[data-v="2"] { background: #eee4da; color: #776e65; }
@@ -1018,7 +1209,6 @@ canvas.game-canvas { background: var(--surface); border-radius: var(--radius); b
 .g2048-cell[data-v="1024"] { background: #edc53f; color: #f9f6f2; font-size: 20px; }
 .g2048-cell[data-v="2048"] { background: #edc22e; color: #f9f6f2; font-size: 20px; }
 
-/* Сапёр */
 .mines-grid { display: grid; gap: 2px; background: var(--border); padding: 2px; border-radius: var(--radius-sm); }
 .mine-cell { width: 32px; height: 32px; background: var(--surface-3); border: none; border-radius: 3px; cursor: pointer; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: var(--text); }
 .mine-cell:hover { background: var(--surface-2); }
@@ -1026,61 +1216,21 @@ canvas.game-canvas { background: var(--surface); border-radius: var(--radius); b
 .mine-cell.boom { background: var(--danger); color: #fff; }
 .mine-cell.flag { color: var(--danger); }
 
-/* Крестики-нолики */
 .ttt-board { display: grid; grid-template-columns: repeat(3, 100px); gap: 8px; }
 .ttt-cell { width: 100px; height: 100px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-size: 40px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--accent); transition: background 0.1s; }
 .ttt-cell:hover { background: var(--surface-3); }
 .ttt-cell.win { background: var(--accent-soft); border-color: var(--accent); }
 
-/* Реакция */
 .react-box { width: 100%; height: 250px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; font-weight: 700; color: #fff; transition: background 0.1s; }
 
-/* Память */
 .memo-grid { display: grid; grid-template-columns: repeat(4, 80px); gap: 12px; }
 .memo-card { width: 80px; height: 80px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 32px; color: transparent; transition: all 0.2s; }
 .memo-card.flip { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 .memo-card.done { background: var(--success); color: #fff; opacity: 0.6; }
 
-/* Пятнашки */
 .puz-tile { width: 100px; height: 100px; background: var(--surface); border-radius: 6px; font-size: 32px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s, background 0.15s; box-shadow: var(--shadow-sm); }
 .puz-tile:hover { background: var(--surface-2); }
 .puz-empty { background: transparent; box-shadow: none; cursor: default; }
-
-/* Судоку */
-.sudoku-board { display: grid; grid-template-columns: repeat(9, 48px); gap: 0; background: var(--text); border: 3px solid var(--text); border-radius: 4px; }
-.sudoku-cell { width: 48px; height: 48px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600; color: var(--text); cursor: pointer; position: relative; }
-.sudoku-cell.fixed { background: var(--surface-2); color: var(--text); font-weight: 700; }
-.sudoku-cell.selected { background: var(--accent-soft); border-color: var(--accent); }
-.sudoku-cell.highlight { background: rgba(10, 132, 255, 0.08); }
-.sudoku-cell.error { color: var(--danger); background: rgba(239, 68, 68, 0.1); }
-.sudoku-cell:nth-child(3n) { border-right: 2px solid var(--text); }
-.sudoku-cell:nth-child(9n) { border-right: none; }
-.sudoku-cell:nth-child(n+19):nth-child(-n+27),
-.sudoku-cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--text); }
-
-/* Шахматы */
-.chess-board { display: grid; grid-template-columns: repeat(8, 64px); border: 3px solid #333; border-radius: 4px; }
-.chess-cell { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 42px; cursor: pointer; position: relative; user-select: none; }
-.chess-cell.light { background: #f0d9b5; }
-.chess-cell.dark { background: #b58863; }
-.chess-cell.selected { box-shadow: inset 0 0 0 4px var(--accent); }
-.chess-cell.possible { position: relative; }
-.chess-cell.possible::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: rgba(10, 132, 255, 0.4); }
-.chess-cell.capture::after { content: ''; position: absolute; inset: 4px; border-radius: 50%; border: 4px solid rgba(239, 68, 68, 0.6); }
-
-/* Шашки */
-.checkers-board { display: grid; grid-template-columns: repeat(8, 60px); border: 3px solid #333; border-radius: 4px; }
-.checkers-cell { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
-.checkers-cell.light { background: #f0d9b5; }
-.checkers-cell.dark { background: #b58863; }
-.checkers-cell.selected { box-shadow: inset 0 0 0 3px var(--accent); }
-.checker-piece { width: 44px; height: 44px; border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.4); border: 2px solid rgba(0,0,0,0.2); }
-.checker-piece.white { background: radial-gradient(circle at 30% 30%, #fff, #ddd); }
-.checker-piece.black { background: radial-gradient(circle at 30% 30%, #555, #111); }
-.checker-piece.king::after { content: '♔'; position: absolute; font-size: 24px; color: gold; text-shadow: 0 0 4px #000; }
-
-/* Bubble Shooter */
-.bubble-canvas { background: #1e293b; border-radius: 8px; }
 
 /* ============================================================
    АНИМАЦИИ
@@ -1093,3 +1243,18 @@ canvas.game-canvas { background: var(--surface); border-radius: var(--radius); b
 .fade-in { animation: fadeIn 0.3s ease; }
 .slide-in-right { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .slide-in-up { animation: slideInUp 0.3s ease; }
+
+/* ============================================================
+   АДАПТИВНОСТЬ
+   ============================================================ */
+
+@media (max-width: 768px) {
+    #alevtina-panel {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+    }
+    .sm-grid { grid-template-columns: repeat(3, 1fr); }
+    .market-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+    .av-stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
