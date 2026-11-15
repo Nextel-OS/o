@@ -1,8 +1,12 @@
 /* ============================================================
-   NEXTEL OS 2.0 — ЯДРО (CORE) — ИСПРАВЛЕНО
+   NEXTEL OS 2.0 — ЯДРО (CORE) v3.4 — ИСПРАВЛЕНО
    ============================================================ */
 
 window.NX = window.NX || {};
+NX.VERSION = '3.4';
+NX.apps = NX.apps || {};
+NX.APPS_MORE_IDS = NX.APPS_MORE_IDS || []; // будет заполнено в apps_more.js
+console.log('[NX-CORE] v' + NX.VERSION + ' loaded — ' + new Date().toISOString());
 
 // --- УТИЛИТЫ ---
 NX.$ = (sel, root = document) => root.querySelector(sel);
@@ -95,26 +99,25 @@ NX.icons = {
     puzzle: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h3a2 2 0 1 1 4 0h3v3a2 2 0 1 0 0 4v3h-3a2 2 0 1 1-4 0H4v-3a2 2 0 1 0 0-4V8z"/></svg>`,
     book: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4h7a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4V4zM20 4h-7a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h7V4z"/></svg>`,
     star: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>`,
-    heart: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-8-5-8-11a4 4 0 0 1 8-1 4 4 0 0 1 8 1c0 6-8 11-8 11z"/></svg>`,
-    fire: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2s4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 1-3s-1 4 1 4 1-4 1-4-2-3 1-6z"/></svg>`,
-    leaf: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 4s-8 0-12 4-4 12-4 12 8 0 12-4 4-12 4-12zM6 18L18 6"/></svg>`,
-    drop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2s6 8 6 13a6 6 0 1 1-12 0c0-5 6-13 6-13z"/></svg>`,
-    cloud: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6.5 18h11a3.5 3.5 0 1 0-1-6.9A4.6 4.6 0 0 0 7.6 13 3.2 3.2 0 0 0 6.5 18Z"/></svg>`,
-    flag: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 21V4h10l-2 3 2 3H5"/></svg>`,
-    gift: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="4"/><rect x="5" y="12" width="14" height="9"/><path d="M12 8v13M12 8C12 8 8 8 8 5s4-3 4 3zM12 8c0 0 4 0 4-3s-4-3-4 3z"/></svg>`
+    grid: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>`,
+    globe: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18Z"/></svg>`,
+    qr: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20v.01"/></svg>`
 };
 
-// --- СОСТОЯНИЕ ---
+// --- СОСТОЯНИЕ ПО УМОЛЧАНИЮ ---
 const DEFAULT_STATE = {
     theme: 'light',
     wallpaper: 0,
     liveWallpaper: 'none',
     installed: [
+        // Продуктивность
         'calc', 'weather', 'wart', 'files', 'terminal', 'browser', 'settings',
         'antivirus', 'trash', 'market', 'notes', 'todo', 'point', 'powerpaint',
         'music', 'clock', 'calendar',
+        // Игры
         'snake', 'g2048', 'mines', 'ttt', 'memory', 'pong', 'reaction', 'guess',
         'tetris', 'breakout', 'puzzle15', 'sudoku', 'chess', 'checkers', 'bubble',
+        // Дополнительные
         'gallery', 'video', 'recorder', 'camera', 'sheet', 'pdf', 'kanban',
         'pomodoro', 'messenger', 'contacts', 'passwords', 'converter',
         'speedtest', 'clipboard', 'taskmgr'
@@ -130,12 +133,8 @@ const DEFAULT_STATE = {
         { id: 'w_weather', type: 'weather', top: 150, right: 20 }
     ],
     session: [],
-    tasks: [
-        { id: 1, text: 'Изучить Nextel OS', done: false }
-    ],
-    notes: [
-        { id: 1, title: 'Добро пожаловать', content: 'Это заметка в Nextel OS.', date: new Date().toISOString(), encrypted: false }
-    ],
+    tasks: [{ id: 1, text: 'Изучить Nextel OS', done: false, priority: 'normal' }],
+    notes: [{ id: 1, title: 'Добро пожаловать', content: 'Это заметка в Nextel OS.', date: new Date().toISOString(), encrypted: false }],
     contacts: [
         { id: 1, name: 'Алиса', phone: '+7 999 123-45-67', email: 'alice@nextel.os' },
         { id: 2, name: 'Боб', phone: '+7 999 765-43-21', email: 'bob@nextel.os' }
@@ -146,92 +145,102 @@ const DEFAULT_STATE = {
     antivirusResult: '',
     avDbVersion: '2026.10.24',
     avFilesScanned: '0',
-    avLastScan: 'Никогда'
+    avLastScan: 'Никогда',
+    // Данные для новых приложений
+    habits: [],
+    diary: [],
+    flashcards: [],
+    pixelArt: null,
+    resumeData: null,
+    notesPro: null,
+    pomodoro: { sessions: 0 }
 };
 
-NX.state = {};
+NX.state = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
 NX.saveState = () => {
+    try { localStorage.setItem('nx_state_v3', JSON.stringify(NX.state)); }
+    catch (e) { console.warn('[NX-CORE] saveState error:', e); }
+};
+
+NX.loadState = () => {
     try {
-        localStorage.setItem('nx_state_v3', JSON.stringify(NX.state));
+        const raw = localStorage.getItem('nx_state_v3') || localStorage.getItem('nx_state_v2');
+        if (!raw) {
+            NX.state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+            console.log('[NX-CORE] No saved state, using DEFAULT_STATE');
+            return;
+        }
+        const saved = JSON.parse(raw);
+        if (!saved || typeof saved !== 'object') throw new Error('saved state is not object');
+        
+        NX.state = { ...JSON.parse(JSON.stringify(DEFAULT_STATE)), ...saved };
+        
+        // КРИТИЧНЫЕ ПРОВЕРКИ — все поля должны быть корректных типов
+        if (!Array.isArray(NX.state.installed)) {
+            console.warn('[NX-CORE] installed is not array, resetting to DEFAULT');
+            NX.state.installed = [...DEFAULT_STATE.installed];
+        }
+        if (!Array.isArray(NX.state.trash)) NX.state.trash = [];
+        if (!Array.isArray(NX.state.widgets)) NX.state.widgets = [...DEFAULT_STATE.widgets];
+        if (!Array.isArray(NX.state.session)) NX.state.session = [];
+        if (!Array.isArray(NX.state.tasks)) NX.state.tasks = [];
+        if (!Array.isArray(NX.state.notes)) NX.state.notes = [];
+        if (!Array.isArray(NX.state.contacts)) NX.state.contacts = [];
+        if (!Array.isArray(NX.state.clipboardHistory)) NX.state.clipboardHistory = [];
+        if (!Array.isArray(NX.state.habits)) NX.state.habits = [];
+        if (!Array.isArray(NX.state.diary)) NX.state.diary = [];
+        if (!Array.isArray(NX.state.flashcards)) NX.state.flashcards = [];
+        if (!NX.state.messages || typeof NX.state.messages !== 'object' || Array.isArray(NX.state.messages)) NX.state.messages = {};
+        if (!NX.state.pomodoro || typeof NX.state.pomodoro !== 'object') NX.state.pomodoro = { sessions: 0 };
+        
+        // Добавляем недостающие базовые приложения (не из корзины)
+        DEFAULT_STATE.installed.forEach(id => {
+            if (!NX.state.installed.includes(id) && !NX.state.trash.some(t => t && t.id === id)) {
+                NX.state.installed.push(id);
+            }
+        });
+        
+        console.log('[NX-CORE] State loaded. installed=' + NX.state.installed.length);
     } catch (e) {
-        console.warn('Не удалось сохранить:', e);
+        console.warn('[NX-CORE] loadState error:', e);
+        NX.state = JSON.parse(JSON.stringify(DEFAULT_STATE));
     }
 };
 
-// ИСПРАВЛЕНО: защита от некорректных данных
-NX.loadState = () => {
-    try {
-        const saved = JSON.parse(localStorage.getItem('nx_state_v3') || localStorage.getItem('nx_state_v2'));
-        if (saved && typeof saved === 'object') {
-            NX.state = { ...DEFAULT_STATE, ...saved };
-            
-            // КРИТИЧНО: проверяем что installed — массив
-            if (!Array.isArray(NX.state.installed)) {
-                NX.state.installed = [...DEFAULT_STATE.installed];
-            }
-            if (!Array.isArray(NX.state.trash)) NX.state.trash = [];
-            if (!Array.isArray(NX.state.widgets)) NX.state.widgets = [...DEFAULT_STATE.widgets];
-            if (!Array.isArray(NX.state.session)) NX.state.session = [];
-            if (!Array.isArray(NX.state.tasks)) NX.state.tasks = [];
-            if (!Array.isArray(NX.state.notes)) NX.state.notes = [];
-            if (!Array.isArray(NX.state.contacts)) NX.state.contacts = [];
-            if (!NX.state.messages || typeof NX.state.messages !== 'object') NX.state.messages = {};
-            if (!Array.isArray(NX.state.clipboardHistory)) NX.state.clipboardHistory = [];
-            
-            // Добавляем недостающие базовые приложения
-            DEFAULT_STATE.installed.forEach(id => {
-                if (!NX.state.installed.includes(id) && !NX.state.trash.some(t => t.id === id)) {
-                    NX.state.installed.push(id);
-                }
-            });
-        } else {
-            NX.state = { ...DEFAULT_STATE };
-        }
-    } catch (e) {
-        console.warn('Ошибка загрузки состояния, используем дефолт:', e);
-        NX.state = { ...DEFAULT_STATE };
-    }
-};
+NX.loadState();
 
 // --- УДАЛЕНИЕ / УСТАНОВКА ПРИЛОЖЕНИЙ ---
 NX.uninstallApp = function(appId) {
     if (!NX.apps || !NX.apps[appId]) return false;
     const app = NX.apps[appId];
-    
     NX.state.installed = NX.state.installed.filter(id => id !== appId);
     NX.state.trash.push({
-        id: appId,
-        name: app.name,
-        type: 'app',
-        icon: app.icon,
-        originalPath: 'installed',
+        id: appId, name: app.name, type: 'app',
+        icon: app.icon, originalPath: 'installed',
         removedAt: new Date().toISOString()
     });
     NX.saveState();
     if (NX.renderDesktop) NX.renderDesktop();
-    NX.notifications.push('Корзина', `Приложение «${app.name}» перемещено в корзину`, 'trash');
+    if (NX.notifications) NX.notifications.push('Корзина', `«${app.name}» перемещено в корзину`, 'trash');
     return true;
 };
 
 NX.installApp = function(appId) {
     if (!NX.apps || !NX.apps[appId]) return false;
     const app = NX.apps[appId];
-    
     if (NX.state.installed.includes(appId)) return false;
     NX.state.installed.push(appId);
     NX.state.trash = NX.state.trash.filter(t => t.id !== appId);
     NX.saveState();
     if (NX.renderDesktop) NX.renderDesktop();
-    NX.notifications.push('Установлено', `Приложение «${app.name}» установлено`, 'check');
+    if (NX.notifications) NX.notifications.push('Установлено', `«${app.name}» установлено`, 'check');
     return true;
 };
 
 // --- API БАТАРЕИ ---
 NX.battery = {
-    level: 100,
-    charging: false,
-    supported: false,
+    level: 100, charging: false, supported: false,
     async init() {
         if (navigator.getBattery) {
             try {
@@ -248,33 +257,25 @@ NX.battery = {
                     NX.bus.emit('battery-change');
                 });
                 NX.bus.emit('battery-change');
-            } catch (e) {
-                this.supported = false;
-            }
+            } catch (e) { this.supported = false; }
         }
     }
 };
 
 // --- ЖИВЫЕ ОБОИ ---
 NX.liveWallpaper = {
-    canvas: null,
-    ctx: null,
-    particles: [],
-    type: 'none',
-    mouse: { x: 0.5, y: 0.5 },
-    raf: null,
-    active: false,
+    canvas: null, ctx: null, particles: [], type: 'none',
+    mouse: { x: 0.5, y: 0.5 }, raf: null, active: false,
 
     init() {
         this.canvas = NX.$('#live-wallpaper-canvas');
         if (!this.canvas) {
             this.canvas = document.createElement('canvas');
             this.canvas.id = 'live-wallpaper-canvas';
-            const desktop = NX.$('#desktop');
-            if (desktop) desktop.prepend(this.canvas);
+            this.canvas.style.cssText = 'position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.8;';
+            document.body.prepend(this.canvas);
         }
         if (!this.canvas) return;
-        
         this.ctx = this.canvas.getContext('2d');
         this.resize();
         window.addEventListener('resize', () => this.resize());
@@ -299,137 +300,87 @@ NX.liveWallpaper = {
         this.type = type || 'none';
         NX.state.liveWallpaper = this.type;
         NX.saveState();
-
         if (this.raf) cancelAnimationFrame(this.raf);
         this.active = false;
         this.particles = [];
-
         if (!this.ctx) return;
         this.ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
         if (this.type === 'none') return;
-
         this.active = true;
         this.initParticles();
         this.animate();
     },
 
     initParticles() {
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+        const w = window.innerWidth, h = window.innerHeight;
         const count = this.type === 'stars' ? 150 : 80;
-
         for (let i = 0; i < count; i++) {
             const p = {
-                x: Math.random() * w,
-                y: Math.random() * h,
-                size: Math.random() * 3 + 1,
-                speed: Math.random() * 2 + 0.5,
-                opacity: Math.random() * 0.5 + 0.3,
-                phase: Math.random() * Math.PI * 2
+                x: Math.random() * w, y: Math.random() * h,
+                size: Math.random() * 3 + 1, speed: Math.random() * 2 + 0.5,
+                opacity: Math.random() * 0.5 + 0.3, phase: Math.random() * Math.PI * 2
             };
-            if (this.type === 'snow') {
-                p.vx = (Math.random() - 0.5) * 0.5;
-                p.vy = p.speed * 0.7;
-            } else if (this.type === 'rain') {
-                p.vx = -0.5;
-                p.vy = p.speed * 4;
-                p.size = Math.random() * 1.5 + 0.5;
-                p.length = Math.random() * 15 + 5;
-            } else if (this.type === 'stars') {
-                p.vx = 0;
-                p.vy = 0;
-                p.twinkle = Math.random() * 0.02 + 0.005;
-            } else if (this.type === 'aurora') {
-                p.x = Math.random() * w;
-                p.y = Math.random() * h * 0.6;
-                p.vx = (Math.random() - 0.5) * 0.3;
-                p.vy = (Math.random() - 0.5) * 0.2;
-                p.size = Math.random() * 150 + 100;
-            } else if (this.type === 'bubbles') {
-                p.vx = (Math.random() - 0.5) * 0.5;
-                p.vy = -Math.random() * 1.5 - 0.5;
-                p.size = Math.random() * 20 + 5;
-            }
+            if (this.type === 'snow') { p.vx = (Math.random() - 0.5) * 0.5; p.vy = p.speed * 0.7; }
+            else if (this.type === 'rain') { p.vx = -0.5; p.vy = p.speed * 4; p.size = Math.random() * 1.5 + 0.5; p.length = Math.random() * 15 + 5; }
+            else if (this.type === 'stars') { p.vx = 0; p.vy = 0; p.twinkle = Math.random() * 0.02 + 0.005; }
+            else if (this.type === 'aurora') { p.x = Math.random() * w; p.y = Math.random() * h * 0.6; p.vx = (Math.random() - 0.5) * 0.3; p.vy = (Math.random() - 0.5) * 0.2; p.size = Math.random() * 150 + 100; }
+            else if (this.type === 'bubbles') { p.vx = (Math.random() - 0.5) * 0.5; p.vy = -Math.random() * 1.5 - 0.5; p.size = Math.random() * 20 + 5; }
             this.particles.push(p);
         }
     },
 
     animate() {
         if (!this.active) return;
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+        const w = window.innerWidth, h = window.innerHeight;
         this.ctx.clearRect(0, 0, w, h);
-
-        const px = (this.mouse.x - 0.5) * 20;
-        const py = (this.mouse.y - 0.5) * 20;
+        const px = (this.mouse.x - 0.5) * 20, py = (this.mouse.y - 0.5) * 20;
 
         if (this.type === 'snow') {
             this.particles.forEach(p => {
-                p.x += p.vx + px * 0.02;
-                p.y += p.vy + Math.sin(p.phase) * 0.2;
-                p.phase += 0.01;
+                p.x += p.vx + px * 0.02; p.y += p.vy + Math.sin(p.phase) * 0.2; p.phase += 0.01;
                 if (p.y > h) { p.y = -10; p.x = Math.random() * w; }
-                if (p.x > w) p.x = 0;
-                if (p.x < 0) p.x = w;
+                if (p.x > w) p.x = 0; if (p.x < 0) p.x = w;
                 this.ctx.fillStyle = `rgba(255,255,255,${p.opacity})`;
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                this.ctx.fill();
+                this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); this.ctx.fill();
             });
         } else if (this.type === 'rain') {
             this.ctx.strokeStyle = 'rgba(150,180,255,0.5)';
             this.particles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
+                p.x += p.vx; p.y += p.vy;
                 if (p.y > h) { p.y = -20; p.x = Math.random() * w; }
                 this.ctx.lineWidth = p.size;
-                this.ctx.beginPath();
-                this.ctx.moveTo(p.x, p.y);
-                this.ctx.lineTo(p.x + p.vx * 3, p.y + p.length);
-                this.ctx.stroke();
+                this.ctx.beginPath(); this.ctx.moveTo(p.x, p.y); this.ctx.lineTo(p.x + p.vx * 3, p.y + p.length); this.ctx.stroke();
             });
         } else if (this.type === 'stars') {
             this.particles.forEach(p => {
                 p.opacity += p.twinkle;
                 if (p.opacity > 0.9 || p.opacity < 0.2) p.twinkle *= -1;
                 this.ctx.fillStyle = `rgba(255,255,255,${p.opacity})`;
-                this.ctx.beginPath();
-                this.ctx.arc(p.x + px * 0.05, p.y + py * 0.05, p.size * 0.5, 0, Math.PI * 2);
-                this.ctx.fill();
+                this.ctx.beginPath(); this.ctx.arc(p.x + px * 0.05, p.y + py * 0.05, p.size * 0.5, 0, Math.PI * 2); this.ctx.fill();
             });
         } else if (this.type === 'aurora') {
             this.particles.forEach((p, i) => {
-                p.x += p.vx;
-                p.y += p.vy;
+                p.x += p.vx; p.y += p.vy;
                 if (p.x < -p.size) p.x = w + p.size;
                 if (p.x > w + p.size) p.x = -p.size;
                 if (p.y < 0) p.y = h * 0.6;
                 if (p.y > h * 0.6) p.y = 0;
                 const grad = this.ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
-                const hue = (i * 30) % 360;
-                grad.addColorStop(0, `hsla(${hue}, 80%, 60%, 0.15)`);
-                grad.addColorStop(1, `hsla(${hue}, 80%, 60%, 0)`);
+                grad.addColorStop(0, `hsla(${(i * 30) % 360}, 80%, 60%, 0.15)`);
+                grad.addColorStop(1, `hsla(${(i * 30) % 360}, 80%, 60%, 0)`);
                 this.ctx.fillStyle = grad;
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                this.ctx.fill();
+                this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); this.ctx.fill();
             });
         } else if (this.type === 'bubbles') {
             this.particles.forEach(p => {
-                p.x += p.vx;
-                p.y += p.vy;
+                p.x += p.vx; p.y += p.vy;
                 if (p.y < -30) { p.y = h + 30; p.x = Math.random() * w; }
-                if (p.x > w) p.x = 0;
-                if (p.x < 0) p.x = w;
+                if (p.x > w) p.x = 0; if (p.x < 0) p.x = w;
                 this.ctx.strokeStyle = `rgba(150,200,255,${p.opacity})`;
                 this.ctx.lineWidth = 1.5;
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                this.ctx.stroke();
+                this.ctx.beginPath(); this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); this.ctx.stroke();
             });
         }
-
         this.raf = requestAnimationFrame(() => this.animate());
     }
 };
@@ -437,18 +388,14 @@ NX.liveWallpaper = {
 // --- КРИПТОГРАФИЯ ---
 NX.crypto = {
     generateSalt() {
-        return Array.from(crypto.getRandomValues(new Uint8Array(16)))
-            .map(b => b.toString(16).padStart(2, '0')).join('');
+        return Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('');
     },
     async deriveKey(password, salt) {
         const enc = new TextEncoder();
         const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
         return crypto.subtle.deriveKey(
             { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' },
-            keyMaterial,
-            { name: 'AES-GCM', length: 256 },
-            false,
-            ['encrypt', 'decrypt']
+            keyMaterial, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
         );
     },
     async encrypt(text, password) {
@@ -457,8 +404,7 @@ NX.crypto = {
         const enc = new TextEncoder();
         const iv = crypto.getRandomValues(new Uint8Array(12));
         const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(text));
-        const combined = { salt, iv: Array.from(iv), data: Array.from(new Uint8Array(encrypted)) };
-        return btoa(JSON.stringify(combined));
+        return btoa(JSON.stringify({ salt, iv: Array.from(iv), data: Array.from(new Uint8Array(encrypted)) }));
     },
     async decrypt(ciphertext, password) {
         try {
@@ -467,21 +413,17 @@ NX.crypto = {
             const dec = new TextDecoder();
             const decrypted = await crypto.subtle.decrypt(
                 { name: 'AES-GCM', iv: new Uint8Array(combined.iv) },
-                key,
-                new Uint8Array(combined.data)
+                key, new Uint8Array(combined.data)
             );
             return dec.decode(decrypted);
-        } catch (e) {
-            throw new Error('Неверный пароль или повреждённые данные');
-        }
+        } catch (e) { throw new Error('Неверный пароль или повреждённые данные'); }
     }
 };
 
 // --- ВИРТУАЛЬНАЯ ФС ---
 NX.fs = {
     root: {
-        name: 'Этот компьютер',
-        type: 'folder',
+        name: 'Этот компьютер', type: 'folder',
         children: [
             { name: 'Рабочий стол', type: 'folder', children: [] },
             { name: 'Документы', type: 'folder', children: [] },
@@ -502,7 +444,7 @@ NX.fs = {
         const folder = this.root.children.find(c => c.name === folderName);
         if (folder) {
             folder.children = folder.children.filter(c => c.name !== fileName);
-            folder.children.push({ name: fileName, type: 'file', kind: kind, content: content, date: new Date().toISOString() });
+            folder.children.push({ name: fileName, type: 'file', kind, content, date: new Date().toISOString() });
             NX.bus.emit('fs-change');
             return true;
         }
@@ -535,21 +477,14 @@ NX.fs = {
     }
 };
 
-// --- ЗВУКОВОЙ ДВИЖОК ---
+// --- ЗВУК ---
 NX.audio = {
-    ctx: null,
-    unlocked: false,
+    ctx: null, unlocked: false,
     init() {
-        if (!this.ctx) {
-            try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
-        }
+        if (!this.ctx) { try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
         if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
     },
-    unlock() {
-        if (this.unlocked) return;
-        this.init();
-        this.unlocked = true;
-    },
+    unlock() { if (this.unlocked) return; this.init(); this.unlocked = true; },
     playTone(freq, dur, type = 'sine', vol = 0.05) {
         if (!this.unlocked) return;
         this.init();
@@ -564,10 +499,8 @@ NX.audio = {
             gain.gain.setValueAtTime(0, this.ctx.currentTime);
             gain.gain.linearRampToValueAtTime(vol * sysVol, this.ctx.currentTime + 0.01);
             gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + dur);
-            osc.connect(gain);
-            gain.connect(this.ctx.destination);
-            osc.start();
-            osc.stop(this.ctx.currentTime + dur);
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            osc.start(); osc.stop(this.ctx.currentTime + dur);
         } catch (e) {}
     },
     click() { this.playTone(800, 0.05, 'sine', 0.1); },
@@ -575,12 +508,7 @@ NX.audio = {
     close() { this.playTone(500, 0.1, 'sine', 0.1); },
     error() { this.playTone(200, 0.2, 'sawtooth', 0.1); },
     notify() { this.playTone(880, 0.1, 'sine', 0.1); setTimeout(() => this.playTone(1100, 0.15, 'sine', 0.08), 100); },
-    boot() {
-        this.init();
-        [440, 554, 659, 880].forEach((n, i) => {
-            setTimeout(() => this.playTone(n, 0.4, 'sine', 0.1), i * 150);
-        });
-    }
+    boot() { this.init(); [440, 554, 659, 880].forEach((n, i) => setTimeout(() => this.playTone(n, 0.4, 'sine', 0.1), i * 150)); }
 };
 
 document.addEventListener('click', () => NX.audio.unlock(), { once: true });
@@ -611,44 +539,20 @@ NX.notifications = {
             </div>
             <div class="t-close">${NX.icons.x}</div>
         `;
-        el.querySelector('.t-close').onclick = () => {
-            el.classList.add('closing');
-            setTimeout(() => el.remove(), 200);
-        };
+        el.querySelector('.t-close').onclick = () => { el.classList.add('closing'); setTimeout(() => el.remove(), 200); };
         container.appendChild(el);
         setTimeout(() => {
-            if (el.parentNode) {
-                el.classList.add('closing');
-                setTimeout(() => el.remove(), 200);
-            }
+            if (el.parentNode) { el.classList.add('closing'); setTimeout(() => el.remove(), 200); }
         }, 4000);
     },
     renderCenter() {
         const center = NX.$('#notification-center');
         if (!center) return;
-        let html = `
-            <div class="np-header">
-                <span>Уведомления</span>
-                <button class="btn ghost" id="clear-notifs" style="height:24px;padding:0 8px;font-size:11px;">Очистить</button>
-            </div>
-            <div class="np-body">
-        `;
-        if (this.items.length === 0) {
-            html += `<div class="np-empty">Нет новых уведомлений</div>`;
-        } else {
-            this.items.forEach(n => {
-                html += `
-                    <div class="np-item">
-                        <div class="t-ic">${NX.icons[n.icon] || NX.icons.info}</div>
-                        <div class="t-body">
-                            <div class="t-title">${NX.esc(n.title)}</div>
-                            <div class="t-msg">${NX.esc(n.message)}</div>
-                            <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${NX.pad(n.time.getHours())}:${NX.pad(n.time.getMinutes())}</div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
+        let html = `<div class="np-header"><span>Уведомления</span><button class="btn ghost" id="clear-notifs" style="height:24px;padding:0 8px;font-size:11px;">Очистить</button></div><div class="np-body">`;
+        if (this.items.length === 0) html += `<div class="np-empty">Нет новых уведомлений</div>`;
+        else this.items.forEach(n => {
+            html += `<div class="np-item"><div class="t-ic">${NX.icons[n.icon] || NX.icons.info}</div><div class="t-body"><div class="t-title">${NX.esc(n.title)}</div><div class="t-msg">${NX.esc(n.message)}</div><div style="font-size:10px;color:var(--text-muted);margin-top:4px;">${NX.pad(n.time.getHours())}:${NX.pad(n.time.getMinutes())}</div></div></div>`;
+        });
         html += `</div>`;
         center.innerHTML = html;
         const clearBtn = center.querySelector('#clear-notifs');
@@ -664,10 +568,7 @@ NX.clipboard = {
         document.addEventListener('cut', this.handleCopy.bind(this));
         if (Array.isArray(NX.state.clipboardHistory)) this.items = NX.state.clipboardHistory;
     },
-    handleCopy(e) {
-        const text = window.getSelection().toString();
-        if (text) this.add(text);
-    },
+    handleCopy(e) { const text = window.getSelection().toString(); if (text) this.add(text); },
     add(text) {
         if (!text.trim()) return;
         this.items = this.items.filter(t => t !== text);
@@ -677,32 +578,15 @@ NX.clipboard = {
         NX.saveState();
         NX.notifications.push('Буфер обмена', 'Текст скопирован', 'clipboard');
     },
-    paste(text) {
-        navigator.clipboard.writeText(text).catch(() => {});
-        NX.audio.click();
-    },
+    paste(text) { navigator.clipboard.writeText(text).catch(() => {}); NX.audio.click(); },
     renderPanel() {
         const panel = NX.$('#clipboard-panel');
         if (!panel) return;
-        let html = `
-            <div class="cb-header">
-                <span>Буфер обмена</span>
-                <div class="t-close" style="width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;">${NX.icons.x}</div>
-            </div>
-            <div class="cb-list">
-        `;
-        if (this.items.length === 0) {
-            html += `<div class="np-empty">История пуста</div>`;
-        } else {
-            this.items.forEach(t => {
-                html += `
-                    <div class="cb-item">
-                        ${NX.esc(t.slice(0, 100))}${t.length > 100 ? '...' : ''}
-                        <div class="cb-time">Нажмите, чтобы скопировать</div>
-                    </div>
-                `;
-            });
-        }
+        let html = `<div class="cb-header"><span>Буфер обмена</span><div class="t-close" style="width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;">${NX.icons.x}</div></div><div class="cb-list">`;
+        if (this.items.length === 0) html += `<div class="np-empty">История пуста</div>`;
+        else this.items.forEach(t => {
+            html += `<div class="cb-item">${NX.esc(t.slice(0, 100))}${t.length > 100 ? '...' : ''}<div class="cb-time">Нажмите, чтобы скопировать</div></div>`;
+        });
         html += `</div>`;
         panel.innerHTML = html;
         panel.querySelector('.t-close').onclick = () => panel.classList.remove('open');
@@ -724,106 +608,113 @@ NX.bus = {
     }
 };
 
-// --- PLACEHOLDER-ПРИЛОЖЕНИЯ ---
-// ИСПРАВЛЕНО: безопасная регистрация, только после загрузки ui.js
+// ============================================================
+// PLACEHOLDER-ПРИЛОЖЕНИЯ (ТОЛЬКО ТЕ, ЧТО ТРЕБУЮТ BACKEND/API)
+// Реальные приложения регистрируются в apps_more.js
+// ============================================================
+
 NX.registerPlaceholderApp = function(cfg) {
-    if (!NX.apps) NX.apps = {};
-    if (NX.apps[cfg.id]) return;
-    if (typeof NX.registerApp !== 'function') {
-        console.warn('NX.registerApp ещё не загружен, пропускаю:', cfg.id);
-        return;
-    }
-    NX.registerApp({
-        id: cfg.id,
-        name: cfg.name,
-        icon: cfg.icon || NX.icons.puzzle,
-        color: cfg.color || '#6b7280',
-        w: 500, h: 400, single: false,
-        category: cfg.category || 'Программы',
-        description: cfg.description || 'Приложение в разработке',
-        rating: cfg.rating || (4 + Math.random()).toFixed(1),
-        size: cfg.size || (Math.random() * 15 + 2).toFixed(1) + ' МБ',
-        render(body) {
-            body.innerHTML = `
-                <div style="display:flex;flex-direction:column;height:100%;align-items:center;justify-content:center;gap:20px;padding:40px;text-align:center;">
-                    <div style="width:80px;height:80px;color:${cfg.color || '#6b7280'};opacity:0.7;">${cfg.icon || NX.icons.puzzle}</div>
-                    <h2 style="font-size:22px;font-weight:700;margin:0;">${NX.esc(cfg.name)}</h2>
-                    <p style="color:var(--text-muted);max-width:400px;line-height:1.6;">${NX.esc(cfg.description || 'Это приложение находится в разработке.')}</p>
-                    <span style="background:var(--accent-soft);color:var(--accent);padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;">В РАЗРАБОТКЕ</span>
-                </div>
-            `;
+    try {
+        if (!NX.apps) NX.apps = {};
+        if (NX.apps[cfg.id]) {
+            console.log('[NX-CORE] Skip placeholder (already registered):', cfg.id);
+            return false;
         }
-    });
+        if (NX.APPS_MORE_IDS && NX.APPS_MORE_IDS.includes(cfg.id)) {
+            console.log('[NX-CORE] Skip placeholder (in APPS_MORE):', cfg.id);
+            return false;
+        }
+        if (typeof NX.registerApp !== 'function') {
+            console.warn('[NX-CORE] registerApp not ready, skipping', cfg.id);
+            return false;
+        }
+        NX.registerApp({
+            id: cfg.id, name: cfg.name,
+            icon: cfg.icon || NX.icons.puzzle,
+            color: cfg.color || '#6b7280',
+            w: 500, h: 400, single: false,
+            category: cfg.category || 'Программы',
+            description: cfg.description || 'Приложение в разработке',
+            rating: cfg.rating || 4.0,
+            size: cfg.size || '3 МБ',
+            isPlaceholder: true,
+            render(body) {
+                body.innerHTML = `
+                    <div style="display:flex;flex-direction:column;height:100%;align-items:center;justify-content:center;gap:20px;padding:40px;text-align:center;">
+                        <div style="width:80px;height:80px;color:${cfg.color || '#6b7280'};opacity:0.7;">${cfg.icon || NX.icons.puzzle}</div>
+                        <h2 style="font-size:22px;font-weight:700;margin:0;">${NX.esc(cfg.name)}</h2>
+                        <p style="color:var(--text-muted);max-width:400px;line-height:1.6;">${NX.esc(cfg.description || 'Это приложение находится в разработке.')}</p>
+                        <span style="background:var(--accent-soft);color:var(--accent);padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;">В РАЗРАБОТКЕ</span>
+                    </div>
+                `;
+            }
+        });
+        return true;
+    } catch (e) {
+        console.error('[NX-CORE] Failed to register placeholder', cfg.id, e);
+        return false;
+    }
 };
 
-// ИСПРАВЛЕНО: регистрация 60 приложений ТОЛЬКО после загрузки всех скриптов
-document.addEventListener('DOMContentLoaded', function() {
-    const extraApps = [
-        { id: 'notepad', name: 'Блокнот', icon: NX.icons.wart, color: '#4a6fa5', category: 'Программы', description: 'Простой блокнот для быстрых записей.' },
-        { id: 'calculator_sci', name: 'Инженерный калькулятор', icon: NX.icons.calc, color: '#8b5cf6', category: 'Утилиты', description: 'Научный калькулятор с тригонометрией.' },
-        { id: 'password_gen', name: 'Генератор паролей', icon: NX.icons.passwords, color: '#30b06b', category: 'Утилиты', description: 'Создание надёжных паролей.' },
-        { id: 'qr_gen', name: 'QR-генератор', icon: NX.icons.grid, color: '#111827', category: 'Утилиты', description: 'Создание QR-кодов из ссылок.' },
-        { id: 'color_picker', name: 'Выбор цвета', icon: NX.icons.point, color: '#e05fb0', category: 'Утилиты', description: 'Палитра цветов, HEX, RGB, HSL.' },
-        { id: 'unit_converter', name: 'Конвертер единиц', icon: NX.icons.converter, color: '#2b8a5f', category: 'Утилиты', description: 'Конвертация всех единиц измерения.' },
-        { id: 'currency', name: 'Валюты', icon: NX.icons.converter, color: '#10b981', category: 'Утилиты', description: 'Курсы валют в реальном времени.' },
-        { id: 'bmi_calc', name: 'ИМТ Калькулятор', icon: NX.icons.calc, color: '#ef4444', category: 'Утилиты', description: 'Индекс массы тела.' },
-        { id: 'date_calc', name: 'Калькулятор дат', icon: NX.icons.calendar, color: '#f59e0b', category: 'Утилиты', description: 'Разница между датами.' },
-        { id: 'age_calc', name: 'Калькулятор возраста', icon: NX.icons.calendar, color: '#e8534a', category: 'Утилиты', description: 'Сколько вам лет.' },
-        { id: 'tip_calc', name: 'Калькулятор чаевых', icon: NX.icons.calc, color: '#0a84ff', category: 'Утилиты', description: 'Расчёт чаевых в ресторане.' },
-        { id: 'timer', name: 'Таймер', icon: NX.icons.clock, color: '#5e5ce6', category: 'Утилиты', description: 'Таймер обратного отсчёта.' },
-        { id: 'stopwatch', name: 'Секундомер', icon: NX.icons.clock, color: '#ff9f0a', category: 'Утилиты', description: 'Точный секундомер.' },
-        { id: 'world_clock', name: 'Мировые часы', icon: NX.icons.clock, color: '#34aadc', category: 'Утилиты', description: 'Часы в разных городах мира.' },
-        { id: 'compass', name: 'Компас', icon: NX.icons.up, color: '#2b8a5f', category: 'Утилиты', description: 'Компас и уровень.' },
-        { id: 'ruler', name: 'Линейка', icon: NX.icons.up, color: '#6b7280', category: 'Утилиты', description: 'Виртуальная линейка.' },
-        { id: 'protractor', name: 'Транспортир', icon: NX.icons.up, color: '#8b5cf6', category: 'Утилиты', description: 'Измерение углов.' },
-        { id: 'level', name: 'Уровень', icon: NX.icons.up, color: '#10b981', category: 'Утилиты', description: 'Проверка ровности поверхности.' },
-        { id: 'magnifier', name: 'Лупа', icon: NX.icons.search, color: '#111827', category: 'Утилиты', description: 'Увеличение экрана.' },
-        { id: 'dictaphone', name: 'Диктофон Pro', icon: NX.icons.recorder, color: '#e8534a', category: 'Программы', description: 'Диктофон с эффектами.' },
-        { id: 'kanban_pro', name: 'Kanban Pro', icon: NX.icons.kanban, color: '#5e5ce6', category: 'Программы', description: 'Расширенная Kanban-доска.' },
-        { id: 'gantt', name: 'Гант', icon: NX.icons.kanban, color: '#f59e0b', category: 'Программы', description: 'Диаграмма Ганта для проектов.' },
-        { id: 'mindmap', name: 'Mind Map', icon: NX.icons.grid, color: '#e05fb0', category: 'Программы', description: 'Интеллект-карты.' },
-        { id: 'whiteboard', name: 'Whiteboard', icon: NX.icons.point, color: '#0a84ff', category: 'Программы', description: 'Бесконечное полотно для рисования.' },
-        { id: 'flowchart', name: 'Диаграммы', icon: NX.icons.kanban, color: '#10b981', category: 'Программы', description: 'Блок-схемы и диаграммы.' },
-        { id: 'resume', name: 'Резюме', icon: NX.icons.fileTxt, color: '#4a6fa5', category: 'Программы', description: 'Конструктор резюме.' },
-        { id: 'invoice', name: 'Накладные', icon: NX.icons.fileTxt, color: '#ff9f0a', category: 'Программы', description: 'Создание счетов и накладных.' },
-        { id: 'meeting', name: 'Встречи', icon: NX.icons.calendar, color: '#e8534a', category: 'Программы', description: 'Планировщик встреч.' },
-        { id: 'notes_pro', name: 'Заметки Pro', icon: NX.icons.notes, color: '#e8c65a', category: 'Программы', description: 'Заметки с тегами и папками.' },
-        { id: 'todo_pro', name: 'Задачи Pro', icon: NX.icons.todo, color: '#5e5ce6', category: 'Программы', description: 'Задачи с подзадачами.' },
-        { id: 'habit', name: 'Трекер привычек', icon: NX.icons.check, color: '#10b981', category: 'Программы', description: 'Отслеживание полезных привычек.' },
-        { id: 'diary', name: 'Дневник', icon: NX.icons.notes, color: '#e05fb0', category: 'Программы', description: 'Личный дневник с шифрованием.' },
-        { id: 'gif_maker', name: 'GIF-мейкер', icon: NX.icons.video, color: '#e05fb0', category: 'Программы', description: 'Создание GIF из изображений.' },
-        { id: 'collage', name: 'Коллаж', icon: NX.icons.gallery, color: '#ff9f0a', category: 'Программы', description: 'Коллажи из фотографий.' },
-        { id: 'filters', name: 'Фильтры', icon: NX.icons.gallery, color: '#5e5ce6', category: 'Программы', description: 'Фильтры для фото.' },
-        { id: 'crop', name: 'Обрезка', icon: NX.icons.point, color: '#10b981', category: 'Программы', description: 'Обрезка изображений.' },
-        { id: 'resize', name: 'Изменение размера', icon: NX.icons.point, color: '#f59e0b', category: 'Программы', description: 'Изменение размера картинок.' },
-        { id: 'audio_editor', name: 'Аудиоредактор', icon: NX.icons.music, color: '#e8534a', category: 'Программы', description: 'Редактирование аудио.' },
-        { id: 'video_editor', name: 'Видеоредактор', icon: NX.icons.video, color: '#e05fb0', category: 'Программы', description: 'Обрезка и склейка видео.' },
-        { id: 'screen_recorder', name: 'Запись экрана', icon: NX.icons.video, color: '#111827', category: 'Программы', description: 'Запись экрана в видео.' },
-        { id: 'screenshot', name: 'Скриншот', icon: NX.icons.camera, color: '#0a84ff', category: 'Программы', description: 'Снимок экрана с аннотациями.' },
-        { id: 'draw_pad', name: 'Draw Pad', icon: NX.icons.point, color: '#8b5cf6', category: 'Программы', description: 'Простой блокнот для рисования.' },
-        { id: 'pixel_art', name: 'Пиксель-арт', icon: NX.icons.grid, color: '#ff9f0a', category: 'Программы', description: 'Редактор пиксель-арта.' },
-        { id: 'gradient', name: 'Градиенты', icon: NX.icons.point, color: '#e05fb0', category: 'Программы', description: 'Создание CSS-градиентов.' },
-        { id: 'periodic', name: 'Таблица Менделеева', icon: NX.icons.sheet, color: '#10b981', category: 'Утилиты', description: 'Периодическая таблица элементов.' },
-        { id: 'physics', name: 'Формулы физики', icon: NX.icons.book, color: '#3b82f6', category: 'Утилиты', description: 'Справочник формул по физике.' },
-        { id: 'math', name: 'Математика', icon: NX.icons.calc, color: '#8b5cf6', category: 'Утилиты', description: 'Формулы и теоремы.' },
-        { id: 'chemistry', name: 'Химия', icon: NX.icons.info, color: '#10b981', category: 'Утилиты', description: 'Химические реакции и формулы.' },
-        { id: 'dictionary', name: 'Словарь', icon: NX.icons.book, color: '#4a6fa5', category: 'Программы', description: 'Толковый словарь.' },
-        { id: 'translator', name: 'Переводчик', icon: NX.icons.globe || NX.icons.search, color: '#0a84ff', category: 'Программы', description: 'Перевод текста.' },
-        { id: 'pomodoro_pro', name: 'Pomodoro Pro', icon: NX.icons.pomodoro, color: '#f59e0b', category: 'Программы', description: 'Pomodoro со статистикой.' },
-        { id: 'flashcards', name: 'Карточки', icon: NX.icons.book, color: '#e05fb0', category: 'Программы', description: 'Обучающие карточки.' },
-        { id: 'disk_cleaner', name: 'Очистка диска', icon: NX.icons.trash, color: '#e8534a', category: 'Система', description: 'Удаление временных файлов.' },
-        { id: 'registry', name: 'Реестр', icon: NX.icons.device, color: '#111827', category: 'Система', description: 'Редактор реестра системы.' },
-        { id: 'drivers', name: 'Драйверы', icon: NX.icons.device, color: '#6b7280', category: 'Система', description: 'Диспетчер драйверов.' },
-        { id: 'devices', name: 'Устройства', icon: NX.icons.monitor, color: '#34aadc', category: 'Система', description: 'Подключённые устройства.' },
-        { id: 'firewall', name: 'Брандмауэр', icon: NX.icons.antivirus, color: '#ef4444', category: 'Система', description: 'Управление сетевыми правилами.' },
-        { id: 'vpn', name: 'VPN', icon: NX.icons.wifi, color: '#10b981', category: 'Система', description: 'Виртуальная частная сеть.' },
-        { id: 'backup', name: 'Резервные копии', icon: NX.icons.save, color: '#0a84ff', category: 'Система', description: 'Создание и восстановление бэкапов.' },
-        { id: 'registry_editor', name: 'Редактор политик', icon: NX.icons.lock, color: '#6b7280', category: 'Система', description: 'Групповые политики.' }
+// Регистрация placeholders ТОЛЬКО после загрузки всех скриптов
+function registerPlaceholders() {
+    if (!NX.apps) NX.apps = {};
+    if (typeof NX.registerApp !== 'function') {
+        setTimeout(registerPlaceholders, 100);
+        return;
+    }
+    
+    console.log('[NX-CORE] Registering placeholders...');
+    
+    const placeholders = [
+        // Требуют backend/API
+        { id: 'qr_gen', name: 'QR-генератор', icon: NX.icons.qr, color: '#111827', category: 'Утилиты', description: 'Генерация QR-кодов (скоро).' },
+        { id: 'currency', name: 'Валюты', icon: NX.icons.converter, color: '#10b981', category: 'Утилиты', description: 'Курсы валют (скоро).' },
+        { id: 'compass', name: 'Компас', icon: NX.icons.up, color: '#2b8a5f', category: 'Утилиты', description: 'Компас (скоро).' },
+        { id: 'ruler', name: 'Линейка', icon: NX.icons.up, color: '#6b7280', category: 'Утилиты', description: 'Виртуальная линейка (скоро).' },
+        { id: 'magnifier', name: 'Лупа', icon: NX.icons.search, color: '#111827', category: 'Утилиты', description: 'Экранная лупа (скоро).' },
+        // Требуют сложной логики
+        { id: 'gantt', name: 'Гант', icon: NX.icons.kanban, color: '#f59e0b', category: 'Программы', description: 'Диаграмма Ганта (скоро).' },
+        { id: 'mindmap', name: 'Mind Map', icon: NX.icons.grid, color: '#e05fb0', category: 'Программы', description: 'Интеллект-карты (скоро).' },
+        { id: 'flowchart', name: 'Диаграммы', icon: NX.icons.kanban, color: '#10b981', category: 'Программы', description: 'Блок-схемы (скоро).' },
+        { id: 'gif_maker', name: 'GIF-мейкер', icon: NX.icons.video, color: '#e05fb0', category: 'Программы', description: 'Создание GIF (скоро).' },
+        { id: 'collage', name: 'Коллаж', icon: NX.icons.gallery, color: '#ff9f0a', category: 'Программы', description: 'Коллажи из фото (скоро).' },
+        { id: 'audio_editor', name: 'Аудиоредактор', icon: NX.icons.music, color: '#e8534a', category: 'Программы', description: 'Редактирование аудио (скоро).' },
+        { id: 'video_editor', name: 'Видеоредактор', icon: NX.icons.video, color: '#e05fb0', category: 'Программы', description: 'Монтаж видео (скоро).' },
+        // Требуют разрешений браузера
+        { id: 'screen_recorder', name: 'Запись экрана', icon: NX.icons.video, color: '#111827', category: 'Программы', description: 'Запись экрана (скоро).' },
+        { id: 'screenshot', name: 'Скриншот', icon: NX.icons.camera, color: '#0a84ff', category: 'Программы', description: 'Скриншоты (скоро).' },
+        // Требуют API словарей/переводчиков
+        { id: 'dictionary', name: 'Словарь', icon: NX.icons.book, color: '#4a6fa5', category: 'Программы', description: 'Словарь (скоро).' },
+        { id: 'translator', name: 'Переводчик', icon: NX.icons.globe, color: '#0a84ff', category: 'Программы', description: 'Перевод (скоро).' },
+        // Системные
+        { id: 'disk_cleaner', name: 'Очистка диска', icon: NX.icons.trash, color: '#e8534a', category: 'Система', description: 'Очистка диска (скоро).' },
+        { id: 'drivers', name: 'Драйверы', icon: NX.icons.device, color: '#6b7280', category: 'Система', description: 'Драйверы (скоро).' },
+        { id: 'devices', name: 'Устройства', icon: NX.icons.monitor, color: '#34aadc', category: 'Система', description: 'Устройства (скоро).' },
+        { id: 'firewall', name: 'Брандмауэр', icon: NX.icons.antivirus, color: '#ef4444', category: 'Система', description: 'Брандмауэр (скоро).' },
+        { id: 'vpn', name: 'VPN', icon: NX.icons.wifi, color: '#10b981', category: 'Система', description: 'VPN (скоро).' },
+        { id: 'registry_editor', name: 'Редактор политик', icon: NX.icons.lock, color: '#6b7280', category: 'Система', description: 'Политики (скоро).' }
     ];
-    extraApps.forEach(app => NX.registerPlaceholderApp(app));
-});
+    
+    let ok = 0, skip = 0;
+    placeholders.forEach(app => { if (NX.registerPlaceholderApp(app)) ok++; else skip++; });
+    console.log(`[NX-CORE] Placeholders: ${ok} registered, ${skip} skipped`);
+    
+    // Обновить рабочий стол, если уже инициализирован
+    if (NX.renderDesktop && document.getElementById('icons-container')) {
+        try { NX.renderDesktop(); } catch(e) {}
+    }
+}
+
+// Запуск после полной загрузки страницы (все скрипты уже загружены)
+if (document.readyState === 'complete') {
+    registerPlaceholders();
+} else {
+    window.addEventListener('load', registerPlaceholders);
+}
 
 // --- ИНИЦИАЛИЗАЦИЯ ЯДРА ---
-NX.loadState();
 NX.clipboard.init();
 NX.battery.init();
+
+console.log('[NX-CORE] ✅ Init complete. installed=' + (Array.isArray(NX.state.installed) ? NX.state.installed.length : 'INVALID'));
